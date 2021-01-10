@@ -1,14 +1,16 @@
 package com.example.myintentserviceapp;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityOptionsCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -20,6 +22,9 @@ import java.io.File;
 import java.util.List;
 
 public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder> {
+
+    public static final String EXTRA_IMAGE_KEY = "CUSTOM_ADAPTER_IMAGE_KEY";
+    public static final String EXTRA_IMAGE_TITLE = "CUSTOM_ADAPTER_IMAGE_TITLE";
 
     private List<Photo> mList;
     private ViewGroup mParent;
@@ -33,7 +38,7 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         mParent = parent;
-        mImageWidth = mParent.getWidth()/4;
+        mImageWidth = mParent.getWidth() / 4;
         View inflate = LayoutInflater.from(mParent.getContext()).inflate(R.layout.grid_view, parent, false);
         ViewHolder vh = new ViewHolder(inflate);
         return vh;
@@ -62,27 +67,29 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
 
     // Method that executes your code for the action received
     public void onItemClick(View view, int position) {
-        //Log.i("TAG", "You clicked number " + getItem(position).toString() + ", which is at cell position " + position);
+        Photo photo = mList.get(position);
+        String imageKeyStr = mParent.getContext().getFilesDir() + "/" + photo.fileName;
+        Context context = mParent.getContext();
+        Intent intent = new Intent(context, PhotoDetailActivity.class);
+        intent.putExtra(EXTRA_IMAGE_KEY, imageKeyStr);
+        intent.putExtra(EXTRA_IMAGE_TITLE,photo.dateTimeOriginal);
+
+        View imageView = (ImageView) view.findViewById(R.id.card_image_view);
+        String sharedElementName = imageView.getTransitionName();
+        Activity activity = (Activity) context;
+        ActivityOptionsCompat optionsCompat =
+                ActivityOptionsCompat.makeSceneTransitionAnimation(activity, imageView, sharedElementName);
+        //makeSceneTransitionAnimation(this, view, view.getTransitionName());
+
+        context.startActivity(intent, optionsCompat.toBundle());
+        Log.i("TAG", ", which is at cell position " + position + ",You clicked number " + getItem(position).toString());
     }
 
-    // Stores and recycles views as they are scrolled off screen
-    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        public ImageView myImageView;
-
-        public ViewHolder(View itemView) {
-            super(itemView);
-            myImageView = (ImageView) itemView.findViewById(R.id.card_image_view);
-
-            itemView.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View view) {
-            onItemClick(view, getAdapterPosition());
-        }
+    private List<Photo> getItem(int position) {
+        return mList;
     }
 
-    public void setData(final List<Photo> newPhotos){
+    public void setData(final List<Photo> newPhotos) {
         DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override
             public int getOldListSize() {
@@ -106,5 +113,22 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         });
         this.mList = newPhotos;
         result.dispatchUpdatesTo(this);
+    }
+
+    // Stores and recycles views as they are scrolled off screen
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        public ImageView myImageView;
+
+        public ViewHolder(View itemView) {
+            super(itemView);
+            myImageView = (ImageView) itemView.findViewById(R.id.card_image_view);
+
+            itemView.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View view) {
+            onItemClick(view, getAdapterPosition());
+        }
     }
 }

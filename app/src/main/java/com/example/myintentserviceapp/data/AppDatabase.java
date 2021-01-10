@@ -35,6 +35,7 @@ public abstract class AppDatabase extends RoomDatabase {
             databaseWriteExecutor.execute(() -> {
                 // Populate the database in the background.
                 // If you want to start with more words, just add them.
+                //TODO テストデータ削除
 
                 PreferenceDao dao = INSTANCE.preferenceDao();
                 Preference preferenceIP = new Preference();

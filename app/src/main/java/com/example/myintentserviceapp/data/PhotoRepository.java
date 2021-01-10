@@ -22,6 +22,10 @@ public class PhotoRepository {
         return mAllPhotos;
     }
 
+    public Photo get(String key){
+        return mPhotoDao.get(key);
+    }
+
     LiveData<List<Photo>> getReAllPhotos() {
         mAllPhotos = mPhotoDao.getAll();
         return mAllPhotos;
