@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "93d949b25a34fdab3a86e166dc075e31",
+    "identityHash": "a169bf501348d8ad14c2e12e17b4249c",
     "entities": [
       {
         "tableName": "User",
@@ -129,12 +129,38 @@
         },
         "indices": [],
         "foreignKeys": []
+      },
+      {
+        "tableName": "Preference",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`param` TEXT NOT NULL, `value` TEXT, PRIMARY KEY(`param`))",
+        "fields": [
+          {
+            "fieldPath": "param",
+            "columnName": "param",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "param"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '93d949b25a34fdab3a86e166dc075e31')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a169bf501348d8ad14c2e12e17b4249c')"
     ]
   }
 }

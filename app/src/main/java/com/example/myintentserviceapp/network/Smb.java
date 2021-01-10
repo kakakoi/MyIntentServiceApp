@@ -10,6 +10,8 @@ import android.util.Log;
 import com.example.myintentserviceapp.MyIntentService;
 import com.example.myintentserviceapp.data.Photo;
 import com.example.myintentserviceapp.data.PhotoRepository;
+import com.example.myintentserviceapp.data.Preference;
+import com.example.myintentserviceapp.data.PreferenceRepository;
 import com.example.myintentserviceapp.data.SmbDirectory;
 import com.example.myintentserviceapp.data.SmbDirectoryRepository;
 import com.example.myintentserviceapp.util.Date;
@@ -36,9 +38,12 @@ import static java.sql.DriverManager.println;
 
 public class Smb {
     private static final String TAG = MethodHandles.lookup().lookupClass().getName();
-    private String userName = "*";
-    private String passWord = "*";
-    private String remoteFile = "smb:\\\\";
+    private String userName;
+    private String passWord;
+    private String remoteFile;
+    private static final String SMB_SCHEME = "smb:\\\\";
+    private String remoteIp;
+    private String remoteStartDir;
 
     private SmbFile smbFile = null;
 
@@ -48,6 +53,7 @@ public class Smb {
 
     private PhotoRepository mPhotoRepository;
     private SmbDirectoryRepository mSmbDirectoryRepository;
+    private PreferenceRepository mPreferenceRepository;
 
     /**
      * 接続用プロパティをセットする
@@ -81,6 +87,16 @@ public class Smb {
         mPhotoRepository = new PhotoRepository(mApplication);
         mSmbDirectoryRepository = new SmbDirectoryRepository(mApplication);
 
+        //認証情報
+        mPreferenceRepository = new PreferenceRepository(mApplication);
+        userName = mPreferenceRepository.get(Preference.TAG_SMB_USER).value;
+        passWord = mPreferenceRepository.get(Preference.TAG_SMB_PASS).value;
+        remoteIp = mPreferenceRepository.get(Preference.TAG_SMB_IP).value;
+        remoteStartDir = mPreferenceRepository.get(Preference.TAG_SMB_DIR).value;
+
+        remoteFile = SMB_SCHEME+remoteIp+remoteStartDir;
+
+        //基点ディレクトリ登録
         SmbDirectory startDirectory = new SmbDirectory();
         startDirectory.path = getStartRemoteFileName();
         startDirectory.createdAt = Date.getTime();
