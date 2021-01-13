@@ -17,11 +17,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.myintentserviceapp.data.Photo;
+import com.example.myintentserviceapp.util.RecyclerFastScroller;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.List;
 
-public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder> {
+public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder> implements RecyclerFastScroller.FastScrollable {
 
     public static final String EXTRA_IMAGE_KEY = "CUSTOM_ADAPTER_IMAGE_KEY";
     public static final String EXTRA_IMAGE_TITLE = "CUSTOM_ADAPTER_IMAGE_TITLE";
@@ -114,6 +117,12 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         });
         this.mList = newPhotos;
         result.dispatchUpdatesTo(this);
+    }
+
+    @NotNull
+    @Override
+    public String setBubbleText(int position) {
+        return mList.get(position).dateTimeOriginal;
     }
 
     // Stores and recycles views as they are scrolled off screen

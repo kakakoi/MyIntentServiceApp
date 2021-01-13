@@ -12,14 +12,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:text="000"
-        app:layout_constraintBottom_toTopOf="@+id/recycler_vew"
+        app:layout_constraintBottom_toTopOf="@+id/recycler_view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/grid_fragment_main"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed"/>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_vew"
+        android:id="@+id/recycler_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:scrollbars="vertical"
@@ -28,5 +28,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <com.example.myintentserviceapp.util.RecyclerFastScroller
+        android:id="@+id/fast_scroller"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintBottom_toBottomOf="@id/recycler_view"
+        app:layout_constraintEnd_toEndOf="@id/recycler_view"
+        app:layout_constraintTop_toTopOf="@id/recycler_view" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

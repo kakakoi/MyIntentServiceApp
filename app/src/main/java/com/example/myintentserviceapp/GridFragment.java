@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myintentserviceapp.data.Photo;
 import com.example.myintentserviceapp.data.PhotoViewModel;
+import com.example.myintentserviceapp.util.RecyclerFastScroller;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +43,6 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
     private final Fragment mFragment = null;
     private Activity mActivity = null;
     private RecyclerView mRecyclerView = null;
-    private TextView mCountTextView = null;
-    private PhotoViewModel mPhotoViewModel;
     /**
      * BroadcastReceiverでMyIntentServiceからの返答を受け取ろうと思います
      */
@@ -68,6 +67,9 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
 
         }
     };
+    private TextView mCountTextView = null;
+    private RecyclerFastScroller mRecyclerFastScroller = null;
+    private PhotoViewModel mPhotoViewModel;
     private GridLayoutManager mLayoutManager = null;
 
     public GridFragment() {
@@ -85,19 +87,16 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
                              Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_grid, container, false);
-        //CustomAdapter adapter = new CustomAdapter(this.createDataset());
         mLayoutManager = new GridLayoutManager(mActivity, 4, GridLayoutManager.VERTICAL, false);
 
         mCountTextView = (TextView) view.findViewById(R.id.count_text);
-        mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_vew);
+        mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view);
+        mRecyclerFastScroller = (RecyclerFastScroller) view.findViewById((R.id.fast_scroller));
 
         mRecyclerView.setHasFixedSize(true);
 
         mRecyclerView.setLayoutManager(mLayoutManager);
-
-        //mRecyclerView.setAdapter(adapter);
-        // Inflate the layout for this fragment
-
+        mRecyclerFastScroller.setRecyclerView(mRecyclerView);
 
         return view;
     }
@@ -110,10 +109,10 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
         LiveData<List<Photo>> lPhotos = mPhotoViewModel.getAllPhotos();
         List<Photo> photos = lPhotos.getValue();
 
-        CustomAdapter adapter =null;
+        CustomAdapter adapter = null;
         if (photos != null) {
             adapter = new CustomAdapter(createDataset(photos));
-        }else {
+        } else {
             adapter = new CustomAdapter(this.createDataset());
         }
         mRecyclerView.setAdapter(adapter);
@@ -121,10 +120,8 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
         mPhotoViewModel.getAllPhotos().observe(getViewLifecycleOwner(), new Observer<List<Photo>>() {
             @Override
             public void onChanged(List<Photo> photos) {
-                //List<Photo> fileNames = new ArrayList<>();
                 int count = photos.size();
-                if(count> 0){
-                    //mRecyclerView.setAdapter(new CustomAdapter(createDataset(photos)));
+                if (count > 0) {
                     CustomAdapter adapter = (CustomAdapter) mRecyclerView.getAdapter();
                     adapter.setData(photos);
                     mCountTextView.setText(Integer.toString(count));
