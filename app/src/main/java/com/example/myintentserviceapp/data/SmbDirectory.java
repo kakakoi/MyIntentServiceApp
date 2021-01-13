@@ -20,6 +20,9 @@ public class SmbDirectory {
     @ColumnInfo(name = "created_at")
     public String createdAt;
 
+    @ColumnInfo(name = "num_media")
+    public int numMedia;
+
     @ColumnInfo(name = "finished")
     public int finished;
 }

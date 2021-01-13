@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ExifInterface;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.example.myintentserviceapp.MyIntentService;
@@ -21,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Properties;
 
 import jcifs.CIFSContext;
@@ -34,14 +34,12 @@ import jcifs.smb.NtlmPasswordAuthenticator;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
-import static java.sql.DriverManager.println;
-
 public class Smb {
     private static final String TAG = MethodHandles.lookup().lookupClass().getName();
+    private static final String SMB_SCHEME = "smb:\\\\";
     private String userName;
     private String passWord;
     private String remoteFile;
-    private static final String SMB_SCHEME = "smb:\\\\";
     private String remoteIp;
     private String remoteStartDir;
 
@@ -54,6 +52,7 @@ public class Smb {
     private PhotoRepository mPhotoRepository;
     private SmbDirectoryRepository mSmbDirectoryRepository;
     private PreferenceRepository mPreferenceRepository;
+
 
     /**
      * 接続用プロパティをセットする
@@ -94,7 +93,7 @@ public class Smb {
         remoteIp = mPreferenceRepository.get(Preference.TAG_SMB_IP).value;
         remoteStartDir = mPreferenceRepository.get(Preference.TAG_SMB_DIR).value;
 
-        remoteFile = SMB_SCHEME+remoteIp+remoteStartDir;
+        remoteFile = SMB_SCHEME + remoteIp + remoteStartDir;
 
         //基点ディレクトリ登録
         SmbDirectory startDirectory = new SmbDirectory();
@@ -121,7 +120,7 @@ public class Smb {
                 if (smbFile == null) {
                     return countImageFile;
                 } else {
-                    load(smbFile);
+                    directory.numMedia = load(smbFile);
                     directory.finished = SmbDirectory.FINISHED;
                     mSmbDirectoryRepository.update(directory);
                 }
@@ -139,7 +138,8 @@ public class Smb {
         return countImageFile;
     }
 
-    private void load(SmbFile smbFile) throws IOException {
+    private int load(SmbFile smbFile) throws IOException {
+        int countFile = 0;
         CloseableIterator<SmbResource> iterator = smbFile.children();
         while (iterator.hasNext()) {
             SmbResource resource = iterator.next();
@@ -151,56 +151,98 @@ public class Smb {
                 mSmbDirectoryRepository.insert(directory);
                 Log.d(TAG + ":INSERT UNFINISHED DIRECTORY", directory.path);
             } else {
-                if (resource.getName().matches("(?i).*\\.jpg")) {
+                if (resource.getName().matches("(?i).*\\.(jpg|mov|mp4)")) {
 
                     SmbFile file = (SmbFile) resource;
                     InputStream in = file.getInputStream();
                     ExifInterface exifInterface = new ExifInterface(in);
                     String dateStr = exifInterface.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL);
-                    outputFile((SmbFile) resource);
-                    Photo photo = new Photo();
-                    photo.dateTimeOriginal = dateStr;
-                    photo.fileName = resource.getName();
-                    photo.sourcePath = ((SmbFile) resource).getPath();
-                    photo.createdAt = Date.getTime();
-                    mPhotoRepository.insert(photo);
-                    Log.d(TAG + ":INSERT DB", photo.sourcePath);
+                    if (TextUtils.isEmpty(dateStr)) {
+                        java.util.Date createdDate = new java.util.Date(file.createTime());
+                        dateStr = Date.format(createdDate);
+                    }
+                    if (outputFile((SmbFile) resource)) {
+                        Photo photo = new Photo();
+                        photo.dateTimeOriginal = dateStr;
+                        photo.fileName = resource.getName();
+                        photo.sourcePath = ((SmbFile) resource).getPath();
+                        photo.createdAt = Date.getTime();
+                        mPhotoRepository.insert(photo);
+                        countFile++;
+                        Log.d(TAG + ":INSERT DB", photo.sourcePath);
+                    }
                     //mService.sendProgressBroadcast(photo.fileName);
+                } else if (resource.getName().matches("(?i).*\\.(mov|mp4)")) {
+                    //FileUtils.copyInputStreamToFile(inputStream, file);
                 }
             }
         }
+        return countFile;
+    }
+
+    private void outputVideo(SmbFile file) {
+
     }
 
     private boolean outputFile(SmbFile file) throws IOException {
-        String outFile = "d:\\temp\\"; //ローカルの複写先フォルダ
-        //フォルダは無視
-        if (file.isDirectory()) return true;
-
+        boolean result = false;
         //ファイルならローカルにCOPYする
         FileOutputStream fileOut = null;
         InputStream is = null;
         try {
-            println(file.getCanonicalUncPath()
-                    + " -> " + outFile + file.getName());
+            //println(file.getCanonicalUncPath() + " -> " + outFile + file.getName());
             //共有エリアのファイルを読み取りOPENする
             is = file.getInputStream();
-
             String fileName = file.getName();
-            int bitmapCompressInt = 64;
 
-            Bitmap bitmap = BitmapFactory.decodeStream(is);
-            fileOut = mApplication.openFileOutput(fileName, Context.MODE_PRIVATE);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, bitmapCompressInt, fileOut);
+            if (fileName.matches("(?i).*\\.(jpg)")) {
+                int bitmapCompressInt = 64;
 
+                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                fileOut = mApplication.openFileOutput(fileName, Context.MODE_PRIVATE);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, bitmapCompressInt, fileOut);
+                result = true;
+
+            } else if (fileName.matches("(?i).*\\.(mov|mp4)")) {
+                //TODO video loader
+                /**
+                 StorageManager storageManager = mApplication.getSystemService(StorageManager.class);
+                 UUID uuid = storageManager.getUuidForPath(mApplication.getCacheDir());
+                 long cacheQuota = storageManager.getCacheQuotaBytes(uuid);
+                 long targetFileSize = file.length();
+                 if (cacheQuota < targetFileSize) {
+                 Log.i(TAG, "can not compress video file. disk full... CacheQuotaBytes-" + cacheQuota + " < " + "smb file Bytes-" + file.length());
+                 } else {
+                 String outputFileStr = mApplication.getCacheDir() + "/" + fileName;
+                 OutputStream op = new FileOutputStream(outputFileStr);
+                 File.copy(is, op, new Callback() {
+                @Override public void call(Object object) {
+                long loadLength = (long) object;
+                int load = Math.toIntExact(loadLength / 1024 * 1024);
+                int target = Math.toIntExact(targetFileSize / 1024 * 1024);
+
+                Log.d(TAG, "Copying Original Video File Size:" + target + "/" + load);
+                }
+                });
+                 String filePath = SiliCompressor.with(mApplication).compressVideo(outputFileStr, String.valueOf(mApplication.getFilesDir()));
+                 Path outPutPath = Paths.get(outputFileStr);
+                 Files.delete(outPutPath);
+                 Log.i(TAG, "success compress video file:" + filePath);
+                 result = true;
+                 }
+                 */
+            }
 
         } catch (SmbException e) {
             e.printStackTrace();
+            Log.e(TAG, e.getMessage());
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            is.close();
-            fileOut.close();
-        }
-        return false;
+            Log.e(TAG, e.getMessage());
+        } /**finally {
+         is.close();
+         fileOut.close();
+         }*/
+        return result;
     }
 }

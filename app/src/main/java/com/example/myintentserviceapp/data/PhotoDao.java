@@ -11,7 +11,7 @@ import java.util.List;
 
 @Dao
 public interface PhotoDao {
-    @Query("SELECT * FROM photo ORDER BY date_time_original ASC")
+    @Query("SELECT * FROM photo ORDER BY date_time_original DESC")
     LiveData<List<Photo>> getAll();
 
     @Query("SELECT * FROM photo WHERE source_path = :sourcePath")

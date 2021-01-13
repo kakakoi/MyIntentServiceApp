@@ -68,6 +68,7 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
     // Method that executes your code for the action received
     public void onItemClick(View view, int position) {
         Photo photo = mList.get(position);
+
         String imageKeyStr = mParent.getContext().getFilesDir() + "/" + photo.fileName;
         Context context = mParent.getContext();
         Intent intent = new Intent(context, PhotoDetailActivity.class);

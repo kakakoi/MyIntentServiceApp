@@ -10,4 +10,9 @@ public class Date {
         DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         return df.format(calendar.getTime());
     }
+
+    public static final String format(java.util.Date date){
+        DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        return df.format(date);
+    }
 }
