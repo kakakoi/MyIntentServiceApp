@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "0a321815c43448b35238de11721561ca",
+    "identityHash": "8d33086712664013c1a54363e5e1e47b",
     "entities": [
       {
         "tableName": "User",
@@ -100,7 +100,7 @@
       },
       {
         "tableName": "SmbDirectory",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`path` TEXT NOT NULL, `created_at` TEXT, `num_media` INTEGER NOT NULL, `finished` INTEGER NOT NULL, PRIMARY KEY(`path`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`path` TEXT NOT NULL, `created_at` TEXT, `num_media` INTEGER NOT NULL, `status` INTEGER NOT NULL, PRIMARY KEY(`path`))",
         "fields": [
           {
             "fieldPath": "path",
@@ -121,8 +121,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "finished",
-            "columnName": "finished",
+            "fieldPath": "status",
+            "columnName": "status",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -166,7 +166,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0a321815c43448b35238de11721561ca')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8d33086712664013c1a54363e5e1e47b')"
     ]
   }
 }

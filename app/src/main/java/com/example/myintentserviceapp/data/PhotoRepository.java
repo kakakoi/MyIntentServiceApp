@@ -12,9 +12,9 @@ public class PhotoRepository {
     private LiveData<List<Photo>> mAllPhotos;
 
     public PhotoRepository(Application application) {
-        AppDatabase db =AppDatabase.getDatabase(application);
+        AppDatabase db = AppDatabase.getDatabase(application);
         mPhotoDao = db.photoDao();
-        mAllPhotos = mPhotoDao.getAll();
+        mAllPhotos = mPhotoDao.getAllLocal();
     }
 
 
@@ -22,8 +22,16 @@ public class PhotoRepository {
         return mAllPhotos;
     }
 
-    public Photo get(String key){
-        return mPhotoDao.get(key);
+    public Photo get(Photo photo) {
+        return mPhotoDao.get(photo.sourcePath);
+    }
+
+    public Photo get(String sourcePath) {
+        return mPhotoDao.get(sourcePath);
+    }
+
+    public Photo getNoLocalTopOne() {
+        return mPhotoDao.getNoLocalTopOne();
     }
 
     LiveData<List<Photo>> getReAllPhotos() {
@@ -36,6 +44,18 @@ public class PhotoRepository {
     public void insert(Photo photo) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             mPhotoDao.insert(photo);
+        });
+    }
+
+    public void delete(Photo photo){
+        AppDatabase.databaseWriteExecutor.execute(()->{
+            mPhotoDao.delete(photo);
+        });
+    }
+
+    public void update(Photo photo){
+        AppDatabase.databaseWriteExecutor.execute(()->{
+            mPhotoDao.update(photo);
         });
     }
 }

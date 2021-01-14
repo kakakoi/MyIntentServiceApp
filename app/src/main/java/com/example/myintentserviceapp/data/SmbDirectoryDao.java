@@ -10,16 +10,23 @@ import androidx.room.Update;
 
 import java.util.List;
 
+/**
+ * status completed 0,index 1,waiting 2
+ *
+ */
 @Dao
 public interface SmbDirectoryDao {
-    @Query("SELECT * FROM smbDirectory ORDER BY finished ASC")
+    @Query("SELECT * FROM smbDirectory ORDER BY status ASC")
     LiveData<List<SmbDirectory>> getAll();
 
-    @Query("SELECT * FROM smbDirectory WHERE finished = 0 ORDER BY created_at ASC")
-    List<SmbDirectory> getAllUnFinished();
+    @Query("SELECT * FROM smbDirectory WHERE status = 2 ORDER BY created_at ASC")
+    List<SmbDirectory> getAllWaiting();
 
-    @Query("SELECT * FROM smbDirectory WHERE finished = 0 ORDER BY created_at ASC LIMIT 1")
-    SmbDirectory getUnFinishedTopOne();
+    @Query("SELECT * FROM smbDirectory WHERE status = 1 ORDER BY created_at ASC LIMIT 1")
+    SmbDirectory getIndexTopOne();
+
+    @Query("SELECT * FROM smbDirectory WHERE status = 2 ORDER BY created_at ASC LIMIT 1")
+    SmbDirectory getWaitingTopOne();
 
     @Query("SELECT * FROM smbDirectory WHERE path = :path")
     LiveData<List<SmbDirectory>> getDirectory(String path);

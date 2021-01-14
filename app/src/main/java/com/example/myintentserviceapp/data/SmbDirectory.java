@@ -9,8 +9,9 @@ import org.jetbrains.annotations.NotNull;
 @Entity
 public class SmbDirectory {
 
-    public static final int FINISHED = 1;
-    public static final int UNFINISHED = 0;
+    public static final int STATUS_COMPLETED = 0;
+    public static final int STATUS_INDEX = 1;
+    public static final int STATUS_WAITING = 2;
 
     @PrimaryKey()
     @ColumnInfo(name = "path")
@@ -23,6 +24,6 @@ public class SmbDirectory {
     @ColumnInfo(name = "num_media")
     public int numMedia;
 
-    @ColumnInfo(name = "finished")
-    public int finished;
+    @ColumnInfo(name = "status")
+    public int status;
 }

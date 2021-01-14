@@ -2,8 +2,6 @@ package com.example.myintentserviceapp.data;
 
 import android.app.Application;
 
-import androidx.lifecycle.LiveData;
-
 import java.util.List;
 
 public class SmbDirectoryRepository {
@@ -13,7 +11,7 @@ public class SmbDirectoryRepository {
     public SmbDirectoryRepository(Application application) {
         AppDatabase db =AppDatabase.getDatabase(application);
         mSmbDirectoryDao = db.smbDirectoryDao();
-        mAllUnFinishedSmbDirectories = mSmbDirectoryDao.getAllUnFinished();
+        mAllUnFinishedSmbDirectories = mSmbDirectoryDao.getAllWaiting();
     }
 
 
@@ -21,8 +19,12 @@ public class SmbDirectoryRepository {
         return mAllUnFinishedSmbDirectories;
     }
 
-    public SmbDirectory getUnFinishedTopOne(){
-        return mSmbDirectoryDao.getUnFinishedTopOne();
+    public SmbDirectory getWaitingTopOne(){
+        return mSmbDirectoryDao.getWaitingTopOne();
+    }
+
+    public SmbDirectory getIndexTopOne(){
+        return mSmbDirectoryDao.getIndexTopOne();
     }
 
     // You must call this on a non-UI thread or your app will throw an exception. Room ensures
@@ -36,6 +38,12 @@ public class SmbDirectoryRepository {
     public void update(SmbDirectory smbDirectory) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             mSmbDirectoryDao.update(smbDirectory);
+        });
+    }
+
+    public void delete(SmbDirectory smbDirectory){
+        AppDatabase.databaseWriteExecutor.execute(()->{
+            mSmbDirectoryDao.delete(smbDirectory);
         });
     }
 }

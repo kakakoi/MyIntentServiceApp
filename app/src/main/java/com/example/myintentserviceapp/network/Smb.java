@@ -15,6 +15,7 @@ import com.example.myintentserviceapp.data.Preference;
 import com.example.myintentserviceapp.data.PreferenceRepository;
 import com.example.myintentserviceapp.data.SmbDirectory;
 import com.example.myintentserviceapp.data.SmbDirectoryRepository;
+import com.example.myintentserviceapp.util.Bitmaps;
 import com.example.myintentserviceapp.util.Date;
 
 import java.io.FileOutputStream;
@@ -37,6 +38,13 @@ import jcifs.smb.SmbFile;
 public class Smb {
     private static final String TAG = MethodHandles.lookup().lookupClass().getName();
     private static final String SMB_SCHEME = "smb:\\\\";
+
+    private static final String REGEX_IMAGE_FILE = "(?i).*\\.(jpg)";
+    private static final String REGEX_VIDEO_ANDROID = "(?i).*\\.(mp4)";
+    private static final String REGEX_VIDEO_IOS = "(?i).*\\.(mov|mp4)";
+    private static final String REGEX_MEDIA_ANDROID = "(?i).*\\.(jpg|mp4)";
+    private static final String REGEX_MEDIA_IOS = "(?i).*\\.(jpg|mov|mp4)";
+
     private String userName;
     private String passWord;
     private String remoteFile;
@@ -96,10 +104,11 @@ public class Smb {
         remoteFile = SMB_SCHEME + remoteIp + remoteStartDir;
 
         //基点ディレクトリ登録
+        //TODO 再登録防止
         SmbDirectory startDirectory = new SmbDirectory();
         startDirectory.path = getStartRemoteFileName();
         startDirectory.createdAt = Date.getTime();
-        startDirectory.finished = SmbDirectory.UNFINISHED;
+        startDirectory.status = SmbDirectory.STATUS_WAITING;
         mSmbDirectoryRepository.insert(startDirectory);
 
         //接続用プロパティを作成する
@@ -113,22 +122,32 @@ public class Smb {
                     = new NtlmPasswordAuthenticator(userName, passWord);
             CIFSContext cifsContext = baseContext.withCredentials(authenticator);
 
-            SmbDirectory directory = null;
-            while ((directory = mSmbDirectoryRepository.getUnFinishedTopOne()) != null) {
+            //create index
+            SmbDirectory directory;
+            while ((directory = mSmbDirectoryRepository.getWaitingTopOne()) != null) {
                 //接続する
                 SmbFile smbFile = connect(cifsContext, directory.path);
                 if (smbFile == null) {
-                    return countImageFile;
+                    //PATHに問題があるのでDBから削除
+                    //TODO DBが空になった時の処理
+                    mSmbDirectoryRepository.delete(directory);
                 } else {
-                    directory.numMedia = load(smbFile);
-                    directory.finished = SmbDirectory.FINISHED;
+                    directory.numMedia = createIndex(smbFile);
+                    directory.status = SmbDirectory.STATUS_INDEX;
                     mSmbDirectoryRepository.update(directory);
                 }
             }
+            //load smb file
+            Photo photo;
+            while ((photo = mPhotoRepository.getNoLocalTopOne()) != null) {
+                copyLocal(cifsContext, photo);
+            }
 
-        } catch (CIFSException e) {
+        } catch (
+                CIFSException e) {
             e.printStackTrace();
-        } catch (IOException e) {
+        } catch (
+                IOException e) {
             e.printStackTrace();
         } finally {
             if (smbFile != null) {
@@ -138,53 +157,87 @@ public class Smb {
         return countImageFile;
     }
 
-    private int load(SmbFile smbFile) throws IOException {
+    /**
+     * Create SMB File Index in DB
+     *
+     * @param smbFile
+     * @return
+     * @throws IOException
+     */
+    private int createIndex(SmbFile smbFile) throws IOException {
         int countFile = 0;
         CloseableIterator<SmbResource> iterator = smbFile.children();
         while (iterator.hasNext()) {
             SmbResource resource = iterator.next();
+            SmbFile file = (SmbFile) resource;
             if (resource.isDirectory()) {
+                //registration directory
                 SmbDirectory directory = new SmbDirectory();
-                directory.finished = 0;
-                directory.path = ((SmbFile) resource).getPath();
+                directory.status = SmbDirectory.STATUS_WAITING;
+                directory.path = file.getPath();
                 directory.createdAt = Date.getTime();
                 mSmbDirectoryRepository.insert(directory);
                 Log.d(TAG + ":INSERT UNFINISHED DIRECTORY", directory.path);
-            } else {
-                if (resource.getName().matches("(?i).*\\.(jpg|mov|mp4)")) {
-
-                    SmbFile file = (SmbFile) resource;
-                    InputStream in = file.getInputStream();
-                    ExifInterface exifInterface = new ExifInterface(in);
-                    String dateStr = exifInterface.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL);
-                    if (TextUtils.isEmpty(dateStr)) {
-                        java.util.Date createdDate = new java.util.Date(file.createTime());
-                        dateStr = Date.format(createdDate);
-                    }
-                    if (outputFile((SmbFile) resource)) {
-                        Photo photo = new Photo();
-                        photo.dateTimeOriginal = dateStr;
-                        photo.fileName = resource.getName();
-                        photo.sourcePath = ((SmbFile) resource).getPath();
-                        photo.createdAt = Date.getTime();
-                        mPhotoRepository.insert(photo);
-                        countFile++;
-                        Log.d(TAG + ":INSERT DB", photo.sourcePath);
-                    }
-                    //mService.sendProgressBroadcast(photo.fileName);
-                } else if (resource.getName().matches("(?i).*\\.(mov|mp4)")) {
-                    //FileUtils.copyInputStreamToFile(inputStream, file);
+            } else if (resource.getName().matches(REGEX_MEDIA_ANDROID)) {
+                //create file index
+                //作成日取得
+                InputStream in = file.getInputStream();
+                ExifInterface exifInterface = new ExifInterface(in);
+                String dateStr = exifInterface.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL);
+                if (TextUtils.isEmpty(dateStr)) {
+                    java.util.Date createdDate = new java.util.Date(file.createTime());
+                    dateStr = Date.format(createdDate);
                 }
+                //INSERT PHOTO DB
+                long startTime = System.currentTimeMillis();
+                Photo photo = new Photo();
+                photo.dateTimeOriginal = dateStr;
+                photo.fileName = resource.getName();
+                photo.sourcePath = ((SmbFile) resource).getPath();
+                photo.createdAt = Date.getTime();
+                mPhotoRepository.insert(photo);
+                countFile++;
+                Log.d(TAG + ":INSERT DB", photo.sourcePath);
+                Log.d(TAG, "INSERT PHOTO DATA (" + photo.sourcePath + ") time is:" + (System.currentTimeMillis() - startTime));
             }
         }
         return countFile;
     }
 
-    private void outputVideo(SmbFile file) {
-
+    /**
+     * copy. SMB to Local
+     *
+     * @param cifsContext
+     * @param photo
+     * @throws IOException
+     */
+    private void copyLocal(CIFSContext cifsContext, Photo photo) throws IOException {
+        long startTime = System.currentTimeMillis();
+        SmbFile smbFile = connect(cifsContext, photo.sourcePath);
+        if (smbFile == null) {
+            //PATHに問題があるのでDBから削除
+            //TODO DBが空になった時の処理
+            mPhotoRepository.delete(photo);
+        } else if (smbFile.getName().matches(REGEX_MEDIA_ANDROID)) {
+            if (outputFile(smbFile)) {
+                photo.localPath = mApplication.getFilesDir() + "/" + photo.fileName;
+                mPhotoRepository.update(photo);
+                Log.d(TAG, "UPDATE PHOTO DATA (" + photo.sourcePath + ") time is:" + (System.currentTimeMillis() - startTime));
+            } else {
+                Log.d(TAG, "Not Found Photo:" + photo.sourcePath);
+            }
+            //mService.sendProgressBroadcast(photo.fileName);
+        } else {
+            Log.d(TAG, "Not Photo:" + photo.sourcePath);
+        }
     }
 
+    //TODO copy video method
+    //private void outputVideo(SmbFile file)
+
     private boolean outputFile(SmbFile file) throws IOException {
+        long startTime = System.currentTimeMillis();
+
         boolean result = false;
         //ファイルならローカルにCOPYする
         FileOutputStream fileOut = null;
@@ -195,15 +248,21 @@ public class Smb {
             is = file.getInputStream();
             String fileName = file.getName();
 
-            if (fileName.matches("(?i).*\\.(jpg)")) {
-                int bitmapCompressInt = 64;
+            if (fileName.matches(REGEX_IMAGE_FILE)) {
+                //int bitmapCompressInt = 64;
+                int bitmapCompressInt = 100;
 
-                Bitmap bitmap = BitmapFactory.decodeStream(is);
                 fileOut = mApplication.openFileOutput(fileName, Context.MODE_PRIVATE);
-                bitmap.compress(Bitmap.CompressFormat.JPEG, bitmapCompressInt, fileOut);
-                result = true;
-
-            } else if (fileName.matches("(?i).*\\.(mov|mp4)")) {
+                Bitmaps bitmaps = new Bitmaps();
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inSampleSize = bitmaps.calcScaleInSampleSize(is);
+                is.close();//一度使ったストリームを閉じないと機能しないためクローズしてから再取得
+                Bitmap bitmap = BitmapFactory.decodeStream(file.getInputStream(), null, options);
+                result = bitmap.compress(Bitmap.CompressFormat.JPEG, bitmapCompressInt, fileOut);
+                Log.d(TAG, "outputFile(" + file.getPath() + ") time is:" + (System.currentTimeMillis() - startTime));
+                return result;
+            } else if (fileName.matches(REGEX_VIDEO_ANDROID)) {
+                Log.d(TAG, "TODO No Copy Video Method");
                 //TODO video loader
                 /**
                  StorageManager storageManager = mApplication.getSystemService(StorageManager.class);
@@ -239,10 +298,9 @@ public class Smb {
         } catch (IOException e) {
             e.printStackTrace();
             Log.e(TAG, e.getMessage());
-        } /**finally {
-         is.close();
-         fileOut.close();
-         }*/
+        }
+        Log.d(TAG, "outputFile(" + file.getPath() + ") time is:" + (System.currentTimeMillis() - startTime));
+
         return result;
     }
 }
