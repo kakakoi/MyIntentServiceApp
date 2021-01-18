@@ -36,7 +36,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 // Populate the database in the background.
                 // If you want to start with more words, just add them.
                 //TODO テストデータ削除
-
+/**
                 PreferenceDao dao = INSTANCE.preferenceDao();
                 Preference preferenceIP = new Preference();
                 preferenceIP.param = Preference.TAG_SMB_IP;
@@ -57,6 +57,7 @@ public abstract class AppDatabase extends RoomDatabase {
                 preferencePass.param = Preference.TAG_SMB_PASS;
                 preferencePass.value = mContext.getString(R.string.preference_smb_pass);
                 dao.insert(preferencePass);
+ */
             });
         }
     };

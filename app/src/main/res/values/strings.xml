@@ -5,17 +5,26 @@
     <string name="title_activity_settings">SettingsActivity</string>
 
     <!-- Preference Titles -->
-    <string name="messages_header">Messages</string>
-    <string name="sync_header">Sync</string>
+    <string name="messages_header">SMB設定</string>
+    <string name="sync_header">バックアップと同期</string>
 
     <!-- Messages Preference -->
-    <string name="signature_title">Your signature</string>
+    <string name="signature_title">SMB IP</string>
     <string name="reply_title">Default reply action</string>
 
     <!-- Sync Preference -->
-    <string name="sync_title">Sync email periodically</string>
+    <string name="sync_title">バックアップと同期</string>
     <string name="attachment_title">Download incoming attachments</string>
     <string name="attachment_summary_on">Automatically download attachments for incoming emails
     </string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
+    <string name="action_favorite">favorite</string>
+    <string name="action_settings">settings</string>
+    <string name="action_log">sync log</string>
+    <string name="action_sync">sync</string>
+    <string name="smb_ip_title">SMB / NAS IP(0.0.0.0)</string>
+    <string name="smb_dir_title">開始ディレクトリ</string>
+    <string name="smb_user_title">ユーザー</string>
+    <string name="smb_pass_title">パスワード</string>
+    <string name="preference_smb_ip_default">0.0.0.0</string>
 </resources>

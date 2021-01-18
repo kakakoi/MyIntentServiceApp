@@ -1,14 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--https://material-ui.com/customization/color/-->
 <resources>
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_A400">#14a37f</color>
+    <color name="teal_A400_variant">#1de9b6</color>
+    <color name="teal_A400_on">#4aedc4</color>
+    <color name="teal_500">#009688</color>
+    <color name="teal_500_variant">#009688</color>
+    <color name="teal_500_on">#33ab9f</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="gray">#FF222222</color>
+    <color name="gray1">#353435</color>
+    <color name="gray2">#95959c</color>
+    <color name="gray3">#d8d7dc</color>
+    <color name="gray4">#f4f4f4</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimary">#009688</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
 </resources>

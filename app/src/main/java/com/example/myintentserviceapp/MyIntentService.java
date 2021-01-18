@@ -15,7 +15,7 @@ public class MyIntentService extends IntentService {
         super("MyIntentService");
     }
 
-    public static void startActionFoo(Context context) {
+    public static void startAction(Context context) {
         Intent intent = new Intent(context, MyIntentService.class);
         intent.setAction(ACTION_SMB);
         context.startService(intent);

@@ -2,11 +2,14 @@ package com.example.myintentserviceapp.network;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ExifInterface;
 import android.text.TextUtils;
 import android.util.Log;
+
+import androidx.preference.PreferenceManager;
 
 import com.example.myintentserviceapp.MyIntentService;
 import com.example.myintentserviceapp.data.Photo;
@@ -59,7 +62,7 @@ public class Smb {
 
     private PhotoRepository mPhotoRepository;
     private SmbDirectoryRepository mSmbDirectoryRepository;
-    private PreferenceRepository mPreferenceRepository;
+    //private PreferenceRepository mPreferenceRepository;
 
 
     /**
@@ -95,13 +98,20 @@ public class Smb {
         mSmbDirectoryRepository = new SmbDirectoryRepository(mApplication);
 
         //認証情報
-        mPreferenceRepository = new PreferenceRepository(mApplication);
-        userName = mPreferenceRepository.get(Preference.TAG_SMB_USER).value;
-        passWord = mPreferenceRepository.get(Preference.TAG_SMB_PASS).value;
-        remoteIp = mPreferenceRepository.get(Preference.TAG_SMB_IP).value;
-        remoteStartDir = mPreferenceRepository.get(Preference.TAG_SMB_DIR).value;
-
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(mApplication /* Activity context */);
+        userName = sharedPreferences.getString("smb_user", "");
+        passWord = sharedPreferences.getString("smb_pass", "");
+        remoteIp = sharedPreferences.getString("smb_ip", "");
+        remoteStartDir = sharedPreferences.getString("smb_dir", "");
         remoteFile = SMB_SCHEME + remoteIp + remoteStartDir;
+/**
+ mPreferenceRepository = new PreferenceRepository(mApplication);
+ userName = mPreferenceRepository.get(Preference.TAG_SMB_USER).value;
+ passWord = mPreferenceRepository.get(Preference.TAG_SMB_PASS).value;
+ remoteIp = mPreferenceRepository.get(Preference.TAG_SMB_IP).value;
+ remoteStartDir = mPreferenceRepository.get(Preference.TAG_SMB_DIR).value;
+ */
 
         //基点ディレクトリ登録
         //TODO 再登録防止
@@ -224,7 +234,7 @@ public class Smb {
                 mPhotoRepository.update(photo);
                 Log.d(TAG, "UPDATE PHOTO DATA (" + photo.sourcePath + ") time is:" + (System.currentTimeMillis() - startTime));
             } else {
-                Log.d(TAG, "Not Found Photo:" + photo.sourcePath);
+                Log.d(TAG, "Can Not Output Photo:" + photo.sourcePath);
             }
             //mService.sendProgressBroadcast(photo.fileName);
         } else {

@@ -1,18 +1,27 @@
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory app:title="@string/messages_header">
 
         <EditTextPreference
-            app:key="signature"
-            app:title="@string/signature_title"
+            app:key="smb_ip"
+            app:title="@string/smb_ip_title"
             app:useSimpleSummaryProvider="true" />
 
-        <ListPreference
-            app:defaultValue="reply"
-            app:entries="@array/reply_entries"
-            app:entryValues="@array/reply_values"
-            app:key="reply"
-            app:title="@string/reply_title"
+        <EditTextPreference
+            app:key="smb_dir"
+            app:title="@string/smb_dir_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:key="smb_user"
+            app:title="@string/smb_user_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:key="smb_pass"
+            app:title="@string/smb_pass_title"
+            android:inputType="textPassword"
             app:useSimpleSummaryProvider="true" />
 
     </PreferenceCategory>
@@ -22,13 +31,6 @@
         <SwitchPreferenceCompat
             app:key="sync"
             app:title="@string/sync_title" />
-
-        <SwitchPreferenceCompat
-            app:dependency="sync"
-            app:key="attachment"
-            app:summaryOff="@string/attachment_summary_off"
-            app:summaryOn="@string/attachment_summary_on"
-            app:title="@string/attachment_title" />
 
     </PreferenceCategory>
 

@@ -83,7 +83,6 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         Activity activity = (Activity) context;
         ActivityOptionsCompat optionsCompat =
                 ActivityOptionsCompat.makeSceneTransitionAnimation(activity, imageView, sharedElementName);
-        //makeSceneTransitionAnimation(this, view, view.getTransitionName());
 
         context.startActivity(intent, optionsCompat.toBundle());
         Log.i("TAG", ", which is at cell position " + position + ",You clicked number " + getItem(position).toString());
