@@ -9,7 +9,7 @@ public class SmbDirectoryRepository {
     private List<SmbDirectory> mAllUnFinishedSmbDirectories;
 
     public SmbDirectoryRepository(Application application) {
-        AppDatabase db =AppDatabase.getDatabase(application);
+        AppDatabase db = AppDatabase.getDatabase(application);
         mSmbDirectoryDao = db.smbDirectoryDao();
         mAllUnFinishedSmbDirectories = mSmbDirectoryDao.getAllWaiting();
     }
@@ -19,11 +19,11 @@ public class SmbDirectoryRepository {
         return mAllUnFinishedSmbDirectories;
     }
 
-    public SmbDirectory getWaitingTopOne(){
+    public SmbDirectory getWaitingTopOne() {
         return mSmbDirectoryDao.getWaitingTopOne();
     }
 
-    public SmbDirectory getIndexTopOne(){
+    public SmbDirectory getIndexTopOne() {
         return mSmbDirectoryDao.getIndexTopOne();
     }
 
@@ -41,9 +41,21 @@ public class SmbDirectoryRepository {
         });
     }
 
-    public void delete(SmbDirectory smbDirectory){
-        AppDatabase.databaseWriteExecutor.execute(()->{
+    public void delete(SmbDirectory smbDirectory) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
             mSmbDirectoryDao.delete(smbDirectory);
+        });
+    }
+
+    public void deleteById(String path) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            mSmbDirectoryDao.deleteById(path);
+        });
+    }
+
+    public void deleteAll() {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            mSmbDirectoryDao.deleteAll();
         });
     }
 }

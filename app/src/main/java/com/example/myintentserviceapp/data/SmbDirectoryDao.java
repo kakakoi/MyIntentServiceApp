@@ -12,7 +12,6 @@ import java.util.List;
 
 /**
  * status completed 0,index 1,waiting 2
- *
  */
 @Dao
 public interface SmbDirectoryDao {
@@ -42,4 +41,10 @@ public interface SmbDirectoryDao {
 
     @Delete
     void delete(SmbDirectory smbDirectory);
+
+    @Query("DELETE FROM smbdirectory WHERE path = :path")
+    void deleteById(String path);
+
+    @Query("DELETE FROM smbdirectory")
+    void deleteAll();
 }

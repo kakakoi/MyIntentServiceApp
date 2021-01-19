@@ -15,7 +15,7 @@ import androidx.appcompat.view.menu.ActionMenuItemView;
 import androidx.appcompat.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
-    public static final String BROADCAST_ACTION = " jp.co.casareal.genintentservice.broadcast";
+    public static final String BROADCAST_ACTION = "com.example.myintentserviceapp.MainActivity.broadcast";
     private static final String TAG = "MainActivity";
 
     @Override
@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
             case R.id.action_sync:
                 MyIntentService.startAction(this);
+                item.setIcon(R.drawable.ic_baseline_sync_24);
                 Animation animation = AnimationUtils.loadAnimation(this, R.anim.rotaion);
 
                 ActionMenuItemView menuItemView = (ActionMenuItemView) findViewById(R.id.action_sync);

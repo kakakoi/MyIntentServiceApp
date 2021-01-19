@@ -21,8 +21,11 @@ public class SmbDirectory {
     @ColumnInfo(name = "created_at")
     public String createdAt;
 
-    @ColumnInfo(name = "num_media")
-    public int numMedia;
+    @ColumnInfo(name = "index_media_count")
+    public int indexMediaCount;
+
+    @ColumnInfo(name = "load_media_count")
+    public int loadMediaCount;
 
     @ColumnInfo(name = "status")
     public int status;
