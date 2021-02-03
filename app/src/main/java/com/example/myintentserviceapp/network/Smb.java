@@ -41,7 +41,7 @@ public class Smb {
     private static final String SMB_SCHEME = "smb:\\\\";
 
     private static final String REGEX_IMAGE_FILE = "(?i).*\\.(jpg)";
-    private static final String REGEX_VIDEO_ANDROID = "(?i).*\\.(mp4)";
+    //private static final String REGEX_VIDEO_ANDROID = "(?i).*\\.(mp4)";
     //private static final String REGEX_VIDEO_IOS = "(?i).*\\.(mov|mp4)";
     private static final String REGEX_MEDIA_ANDROID = "(?i).*\\.(jpg|mp4)";
     //private static final String REGEX_MEDIA_IOS = "(?i).*\\.(jpg|mov|mp4)";
@@ -52,8 +52,6 @@ public class Smb {
 
     private String broadcastTagOutput;
     private String broadcastTagIndex;
-
-
 
     private MyIntentService mService = null;
     private Application mApplication = null;
@@ -254,6 +252,7 @@ public class Smb {
                 mPhotoRepository.update(photo);
                 Log.d(TAG, "UPDATE PHOTO DATA (" + photo.sourcePath + ") time is:" + (System.currentTimeMillis() - startTime));
             } else {
+                mPhotoRepository.delete(photo);
                 Log.d(TAG, "Can Not Output Photo:" + photo.sourcePath);
             }
         } else {
@@ -291,8 +290,7 @@ public class Smb {
                 result = bitmap.compress(Bitmap.CompressFormat.JPEG, bitmapCompressInt, fileOut);
                 Log.d(TAG, "outputFile(" + file.getPath() + ") time is:" + (System.currentTimeMillis() - startTime));
                 return result;
-            } else if (fileName.matches(REGEX_VIDEO_ANDROID)) {
-                Log.d(TAG, "TODO No Copy Video Method");
+                //} else if (fileName.matches(REGEX_VIDEO_ANDROID)) {
                 //TODO video loader
                 /*
                  StorageManager storageManager = mApplication.getSystemService(StorageManager.class);
