@@ -34,7 +34,6 @@ import jcifs.SmbResource;
 import jcifs.config.PropertyConfiguration;
 import jcifs.context.BaseContext;
 import jcifs.smb.NtlmPasswordAuthenticator;
-import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
 public class Smb {
@@ -43,22 +42,17 @@ public class Smb {
 
     private static final String REGEX_IMAGE_FILE = "(?i).*\\.(jpg)";
     private static final String REGEX_VIDEO_ANDROID = "(?i).*\\.(mp4)";
-    private static final String REGEX_VIDEO_IOS = "(?i).*\\.(mov|mp4)";
+    //private static final String REGEX_VIDEO_IOS = "(?i).*\\.(mov|mp4)";
     private static final String REGEX_MEDIA_ANDROID = "(?i).*\\.(jpg|mp4)";
-    private static final String REGEX_MEDIA_IOS = "(?i).*\\.(jpg|mov|mp4)";
+    //private static final String REGEX_MEDIA_IOS = "(?i).*\\.(jpg|mov|mp4)";
 
     public static final String BROADCAST_TAG_STATUS = "smb_broad_cast_tag";
 
-    private String userName;
-    private String passWord;
     private String remoteFile;
-    private String remoteIp;
-    private String remoteStartDir;
 
     private String broadcastTagOutput;
     private String broadcastTagIndex;
 
-    private SmbFile smbFile = null;
 
 
     private MyIntentService mService = null;
@@ -107,15 +101,15 @@ public class Smb {
         //認証情報
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(mApplication /* Activity context */);
-        remoteIp = sharedPreferences.getString("smb_ip", "");
+        String remoteIp = sharedPreferences.getString("smb_ip", "");
         if (TextUtils.isEmpty(remoteIp)) {
             return result;
         }
-        remoteStartDir = sharedPreferences.getString("smb_dir", "");
+        String remoteStartDir = sharedPreferences.getString("smb_dir", "");
         remoteFile = SMB_SCHEME + remoteIp + remoteStartDir;
 
-        userName = sharedPreferences.getString("smb_user", "");
-        passWord = sharedPreferences.getString("smb_pass", "");
+        String userName = sharedPreferences.getString("smb_user", "");
+        String passWord = sharedPreferences.getString("smb_pass", "");
 
         //基点ディレクトリ登録
         //TODO 再登録防止
@@ -128,6 +122,8 @@ public class Smb {
         //接続用プロパティを作成する
         Properties prop = new Properties();
         setProperties(prop);
+        SmbFile smbFile = null;
+
         try {
             //接続情報を作成する
             BaseContext baseContext
@@ -139,15 +135,21 @@ public class Smb {
             //create index
             SmbDirectory directory;
             while ((directory = mSmbDirectoryRepository.getWaitingTopOne()) != null) {
-                indexing(cifsContext, directory);
+                //接続する
+                smbFile = connect(cifsContext, directory.path);
+                try {
+                    indexing(cifsContext, smbFile, directory);
+                } catch (CIFSException e) {
+                    //接続に問題があるのでDBから削除
+                    mSmbDirectoryRepository.delete(directory);
+                    Log.e(TAG, "Access denied " + directory.path);
+                } catch (IOException e) {
+                    Log.e(TAG, "IOException" + directory.path + ":" + e.getLocalizedMessage());
+                }
             }
             result = true;
         } catch (
                 CIFSException e) {
-            e.printStackTrace();
-            throw e;
-        } catch (
-                IOException e) {
             e.printStackTrace();
             throw e;
         } finally {
@@ -158,35 +160,26 @@ public class Smb {
         return result;
     }
 
-    private void indexing(CIFSContext cifsContext, SmbDirectory directory) throws IOException {
-        //接続する
-        SmbFile smbFile = connect(cifsContext, directory.path);
+    private void indexing(CIFSContext cifsContext, SmbFile smbFile, SmbDirectory directory) throws IOException {
         if (smbFile == null) {
             //PATHに問題があるのでDBから削除
             //TODO DBが空になった時の処理
             mSmbDirectoryRepository.delete(directory);
         } else {
-            try {
-                directory.indexMediaCount = indexingPhoto(smbFile);
-                directory.status = SmbDirectory.STATUS_INDEX;
-                mSmbDirectoryRepository.update(directory);
+            directory.indexMediaCount = indexingPhoto(smbFile);
+            directory.status = SmbDirectory.STATUS_INDEX;
+            mSmbDirectoryRepository.update(directory);
 
-                //load smb file
-                int loadCount = 0;
-                Photo photo;
-                while ((photo = mPhotoRepository.getNoLocalTopOne()) != null) {
-                    copyLocal(cifsContext, photo);
-                    loadCount++;
-                }
-                directory.loadMediaCount = loadCount;
-                directory.status = SmbDirectory.STATUS_COMPLETED;
-                mSmbDirectoryRepository.update(directory);
-
-            } catch (IOException e) {
-                //接続に問題があるのでDBから削除
-                mSmbDirectoryRepository.delete(directory);
-                throw e;
+            //load smb file
+            int loadCount = 0;
+            Photo photo;
+            while ((photo = mPhotoRepository.getNoLocalTopOne()) != null) {
+                copyLocal(cifsContext, photo);
+                loadCount++;
             }
+            directory.loadMediaCount = loadCount;
+            directory.status = SmbDirectory.STATUS_COMPLETED;
+            mSmbDirectoryRepository.update(directory);
         }
     }
 
@@ -200,16 +193,8 @@ public class Smb {
     private int indexingPhoto(SmbFile smbFile) throws IOException {
         int countFile = 0;
         CloseableIterator<SmbResource> iterator;
-        try {
-            iterator = smbFile.children();
-        } catch (IOException e) {
-            if (smbFile.isDirectory()) {
-                //異常ディレクトリーを削除
-                Log.d(TAG, "DELETE ILLEGAL PATH :" + smbFile.getPath());
-                mSmbDirectoryRepository.deleteById(smbFile.getPath());
-            }
-            throw e;
-        }
+        iterator = smbFile.children();
+
         while (iterator.hasNext()) {
             SmbResource resource = iterator.next();
             SmbFile file = (SmbFile) resource;
@@ -238,6 +223,7 @@ public class Smb {
                 photo.fileName = resource.getName();
                 photo.sourcePath = ((SmbFile) resource).getPath();
                 photo.createdAt = Date.getTime();
+                photo.sourceType = Photo.SOURCE_TYPE_SMB;
                 mPhotoRepository.insert(photo);
                 mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, broadcastTagIndex + photo.sourcePath);
                 countFile++;
@@ -270,7 +256,6 @@ public class Smb {
             } else {
                 Log.d(TAG, "Can Not Output Photo:" + photo.sourcePath);
             }
-            //mService.sendProgressBroadcast(photo.fileName);
         } else {
             Log.d(TAG, "Not Photo:" + photo.sourcePath);
         }
@@ -287,16 +272,14 @@ public class Smb {
 
         boolean result = false;
         //ファイルならローカルにCOPYする
-        FileOutputStream fileOut = null;
-        InputStream is = null;
+        FileOutputStream fileOut;
+        InputStream is;
         try {
-            //println(file.getCanonicalUncPath() + " -> " + outFile + file.getName());
             //共有エリアのファイルを読み取りOPENする
             is = file.getInputStream();
             String fileName = file.getName();
 
             if (fileName.matches(REGEX_IMAGE_FILE)) {
-                //int bitmapCompressInt = 64;
                 int bitmapCompressInt = 100;
 
                 fileOut = mApplication.openFileOutput(fileName, Context.MODE_PRIVATE);
@@ -311,7 +294,7 @@ public class Smb {
             } else if (fileName.matches(REGEX_VIDEO_ANDROID)) {
                 Log.d(TAG, "TODO No Copy Video Method");
                 //TODO video loader
-                /**
+                /*
                  StorageManager storageManager = mApplication.getSystemService(StorageManager.class);
                  UUID uuid = storageManager.getUuidForPath(mApplication.getCacheDir());
                  long cacheQuota = storageManager.getCacheQuotaBytes(uuid);
@@ -339,14 +322,12 @@ public class Smb {
                  */
             }
 
-        } catch (SmbException e) {
-            e.printStackTrace();
-            Log.e(TAG, e.getMessage());
         } catch (IOException e) {
             e.printStackTrace();
             Log.e(TAG, e.getMessage());
         }
         Log.d(TAG, "outputFile(" + file.getPath() + ") time is:" + (System.currentTimeMillis() - startTime));
+        mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, "");
 
         return result;
     }

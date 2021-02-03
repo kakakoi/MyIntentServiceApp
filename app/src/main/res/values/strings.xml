@@ -30,5 +30,7 @@
     <string name="error_cifs">SMB認証エラー</string>
     <string name="text_file">ファイル</string>
     <string name="index">インデックス...</string>
-    <string name="output">読み込み中...</string>
+    <string name="output">読込中...</string>
+    <string name="required.message">許可は必須です。設定から許可をお願いします</string>
+    <string name="android.permission.READ_EXTERNAL_STORAGE">ストレージアクセス</string>
 </resources>

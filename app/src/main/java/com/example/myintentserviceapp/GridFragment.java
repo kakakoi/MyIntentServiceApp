@@ -25,7 +25,6 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.lifecycle.ViewModelStore;
 import androidx.lifecycle.ViewModelStoreOwner;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -33,6 +32,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.myintentserviceapp.data.Photo;
 import com.example.myintentserviceapp.data.PhotoViewModel;
+import com.example.myintentserviceapp.delegate.AnimationDelegate;
 import com.example.myintentserviceapp.network.Smb;
 import com.example.myintentserviceapp.util.RecyclerFastScroller;
 
@@ -61,6 +61,11 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
     private final BroadcastReceiver msgReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             mStatusTextView.setText(intent.getStringExtra(Smb.BROADCAST_TAG_STATUS));
+            ActionMenuItemView menuItemView = (ActionMenuItemView) mActivity.findViewById(R.id.action_sync);
+            //同期アイコンがアニメーションしてなければ動かす
+            if (menuItemView != null && menuItemView.getAnimation() == null) {
+                AnimationDelegate.startAnimSyncIcon(mActivity, mMenu.findItem(R.id.action_sync), menuItemView);
+            }
         }
     };
 
@@ -168,6 +173,7 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
     public void onPause() {
         super.onPause();
         LocalBroadcastManager.getInstance(this.getContext()).unregisterReceiver(errorReceiver);
+        LocalBroadcastManager.getInstance(this.getContext()).unregisterReceiver(msgReceiver);
     }
 
     private List<Photo> createDataset() {
@@ -192,10 +198,6 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
             }
         }
         return dataset;
-    }
-
-    public ViewModelStore getViewModelStore() {
-        return new ViewModelStore();
     }
 
     public class PhotoViewModelFactory extends ViewModelProvider.AndroidViewModelFactory {

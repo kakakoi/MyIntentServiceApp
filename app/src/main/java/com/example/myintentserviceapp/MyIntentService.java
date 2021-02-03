@@ -4,9 +4,11 @@ import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.example.myintentserviceapp.media.LocalMedia;
 import com.example.myintentserviceapp.network.Smb;
 
 import java.io.IOException;
@@ -14,6 +16,7 @@ import java.lang.invoke.MethodHandles;
 
 public class MyIntentService extends IntentService {
     private static final String ACTION_SMB = "com.example.myintentserviceapp.action.SMB";
+    private static final String ACTION_LOCAL = "com.example.myintentserviceapp.action.local";
     public static final String BROADCAST_ACTION_ERROR = "com.example.myintentserviceapp.MyIntentService.Broadcast.error";
     public static final String BROADCAST_ACTION_MSG = "com.example.myintentserviceapp.MyIntentService.Broadcast.msg";
 
@@ -23,7 +26,13 @@ public class MyIntentService extends IntentService {
         super("MyIntentService");
     }
 
-    public static void startAction(Context context) {
+    public static void startActionLocal(Context context) {
+        Intent intent = new Intent(context, MyIntentService.class);
+        intent.setAction(ACTION_LOCAL);
+        context.startService(intent);
+    }
+
+    public static void startActionSMB(Context context) {
         Intent intent = new Intent(context, MyIntentService.class);
         intent.setAction(ACTION_SMB);
         context.startService(intent);
@@ -34,12 +43,24 @@ public class MyIntentService extends IntentService {
         if (intent != null) {
             final String action = intent.getAction();
             if (ACTION_SMB.equals(action)) {
-                handleActionFoo();
+                handleActionSMB();
+            } else if (ACTION_LOCAL.equals(action)) {
+                handleActionLocal();
             }
         }
     }
 
-    private void handleActionFoo() {
+    private void handleActionLocal() {
+        LocalMedia localMedia = new LocalMedia();
+        try {
+            localMedia.indexing(getApplication());
+        } catch (Exception e) {
+            Log.e(TAG, "handleActionLocal: ", e);
+            Toast.makeText(this, "例外が発生、Permissionを許可していますか？", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void handleActionSMB() {
         Smb smb = new Smb();
         try {
             if (!smb.setup(getApplication(), this)) {

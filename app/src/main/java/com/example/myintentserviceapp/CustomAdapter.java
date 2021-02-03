@@ -26,7 +26,7 @@ import java.util.List;
 
 public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder> implements RecyclerFastScroller.FastScrollable {
 
-    public static final String EXTRA_IMAGE_KEY = "CUSTOM_ADAPTER_IMAGE_KEY";
+    public static final String EXTRA_IMAGE_PATH = "CUSTOM_ADAPTER_IMAGE_PATH";
     public static final String EXTRA_IMAGE_TITLE = "CUSTOM_ADAPTER_IMAGE_TITLE";
 
     private List<Photo> mList;
@@ -49,14 +49,13 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        String pathName = mParent.getContext().getFilesDir() + "/" + mList.get(position).fileName;
-        //Bitmap bitmap = BitmapFactory.decodeFile(pathName);
+        String pathName = mList.get(position).localPath;
+
         Glide.with(mParent.getContext())
                 .load(new File(pathName))
                 .override(mImageWidth, mImageWidth)
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .into(((ViewHolder) holder).myImageView);
-        //holder.myImageView.setImageBitmap(bitmap);
     }
 
     @Override
@@ -72,10 +71,10 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
     public void onItemClick(View view, int position) {
         Photo photo = mList.get(position);
 
-        String imageKeyStr = mParent.getContext().getFilesDir() + "/" + photo.fileName;
+        String filepath = photo.localPath;
         Context context = mParent.getContext();
         Intent intent = new Intent(context, PhotoDetailActivity.class);
-        intent.putExtra(EXTRA_IMAGE_KEY, imageKeyStr);
+        intent.putExtra(EXTRA_IMAGE_PATH, filepath);
         intent.putExtra(EXTRA_IMAGE_TITLE,photo.dateTimeOriginal);
 
         View imageView = (ImageView) view.findViewById(R.id.card_image_view);

@@ -21,7 +21,7 @@ public interface PhotoDao {
     @Query("SELECT * FROM photo WHERE source_path = :sourcePath")
     Photo get(String sourcePath);
 
-    @Query("SELECT * FROM photo WHERE local_path is null or local_path = '' ORDER BY date_time_original DESC LIMIT 1")
+    @Query("SELECT * FROM photo WHERE source_type = 'smb' AND local_path is null or local_path = '' ORDER BY date_time_original DESC LIMIT 1")
     Photo getNoLocalTopOne();
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

@@ -9,10 +9,16 @@ import org.jetbrains.annotations.NotNull;
 @Entity
 public class Photo {
 
+    public static final String SOURCE_TYPE_SMB = "smb";
+    public static final String SOURCE_TYPE_LOCAL = "local";
+
     @PrimaryKey()
     @ColumnInfo(name = "source_path")
     @NotNull
     public String sourcePath;
+
+    @ColumnInfo(name = "source_type")
+    public String sourceType;
 
     @ColumnInfo(name = "file_name")
     public String fileName;

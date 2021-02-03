@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "dcd4efad213f8e32aa90b042fbb44f99",
+    "identityHash": "03779c5b1de55cc8a57b5596fa877740",
     "entities": [
       {
         "tableName": "User",
@@ -38,13 +38,19 @@
       },
       {
         "tableName": "Photo",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`source_path` TEXT NOT NULL, `file_name` TEXT, `local_path` TEXT, `gps` TEXT, `height` INTEGER NOT NULL, `width` INTEGER NOT NULL, `date_time_original` TEXT, `created_at` TEXT, PRIMARY KEY(`source_path`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`source_path` TEXT NOT NULL, `source_type` TEXT, `file_name` TEXT, `local_path` TEXT, `gps` TEXT, `height` INTEGER NOT NULL, `width` INTEGER NOT NULL, `date_time_original` TEXT, `created_at` TEXT, PRIMARY KEY(`source_path`))",
         "fields": [
           {
             "fieldPath": "sourcePath",
             "columnName": "source_path",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "sourceType",
+            "columnName": "source_type",
+            "affinity": "TEXT",
+            "notNull": false
           },
           {
             "fieldPath": "fileName",
@@ -172,7 +178,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dcd4efad213f8e32aa90b042fbb44f99')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '03779c5b1de55cc8a57b5596fa877740')"
     ]
   }
 }
