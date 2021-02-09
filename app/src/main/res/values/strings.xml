@@ -33,4 +33,6 @@
     <string name="output">読込中...</string>
     <string name="required.message">許可は必須です。設定から許可をお願いします</string>
     <string name="android.permission.READ_EXTERNAL_STORAGE">ストレージアクセス</string>
+    <string name="access_denied">アクセスできません</string>
+    <string name="preference_smb_dir_default">/</string>
 </resources>

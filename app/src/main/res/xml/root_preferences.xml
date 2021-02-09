@@ -11,6 +11,7 @@
         <EditTextPreference
             app:key="smb_dir"
             app:title="@string/smb_dir_title"
+            app:defaultValue="@string/preference_smb_dir_default"
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference

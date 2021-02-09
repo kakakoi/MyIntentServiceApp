@@ -11,8 +11,10 @@ import android.util.Log;
 
 import androidx.preference.PreferenceManager;
 
+import com.example.myintentserviceapp.GridFragment;
 import com.example.myintentserviceapp.MyIntentService;
 import com.example.myintentserviceapp.R;
+import com.example.myintentserviceapp.SettingsActivity;
 import com.example.myintentserviceapp.data.Photo;
 import com.example.myintentserviceapp.data.PhotoRepository;
 import com.example.myintentserviceapp.data.SmbDirectory;
@@ -52,6 +54,7 @@ public class Smb {
 
     private String broadcastTagOutput;
     private String broadcastTagIndex;
+    private String broadcastTagAccessDenied;
 
     private MyIntentService mService = null;
     private Application mApplication = null;
@@ -82,10 +85,6 @@ public class Smb {
         }
     }
 
-    public String getStartRemoteFileName() {
-        return remoteFile;
-    }
-
     public boolean setup(Application application, MyIntentService service) throws IOException {
         boolean result = false;
         mApplication = application;
@@ -95,6 +94,7 @@ public class Smb {
 
         broadcastTagOutput = mApplication.getString(R.string.output);
         broadcastTagIndex = mApplication.getString(R.string.index);
+        broadcastTagAccessDenied = mApplication.getString(R.string.access_denied);
 
         //認証情報
         SharedPreferences sharedPreferences =
@@ -103,16 +103,16 @@ public class Smb {
         if (TextUtils.isEmpty(remoteIp)) {
             return result;
         }
-        String remoteStartDir = sharedPreferences.getString("smb_dir", "");
-        remoteFile = SMB_SCHEME + remoteIp + remoteStartDir;
-
         String userName = sharedPreferences.getString("smb_user", "");
         String passWord = sharedPreferences.getString("smb_pass", "");
+
+        String remoteStartDir = sharedPreferences.getString("smb_dir", "");
+        remoteFile = SMB_SCHEME + remoteIp + remoteStartDir;
 
         //基点ディレクトリ登録
         //TODO 再登録防止
         SmbDirectory startDirectory = new SmbDirectory();
-        startDirectory.path = getStartRemoteFileName();
+        startDirectory.path = remoteFile;
         startDirectory.createdAt = Date.getTime();
         startDirectory.status = SmbDirectory.STATUS_WAITING;
         mSmbDirectoryRepository.insert(startDirectory);
@@ -141,6 +141,7 @@ public class Smb {
                     //接続に問題があるのでDBから削除
                     mSmbDirectoryRepository.delete(directory);
                     Log.e(TAG, "Access denied " + directory.path);
+                    mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_ERROR, GridFragment.MSG, broadcastTagAccessDenied + directory.path);
                 } catch (IOException e) {
                     Log.e(TAG, "IOException" + directory.path + ":" + e.getLocalizedMessage());
                 }
@@ -328,5 +329,41 @@ public class Smb {
         mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, "");
 
         return result;
+    }
+
+    //書込み権限有無
+    public boolean checkPermissionWrite(Application application) {
+        //認証情報
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(application);
+        String remoteIp = sharedPreferences.getString(SettingsActivity.KEY_SMB_IP, "");
+        if (TextUtils.isEmpty(remoteIp)) {
+            return false;
+        }
+        String remoteStartDir = sharedPreferences.getString(SettingsActivity.KEY_SMB_DIR, "");
+        remoteFile = SMB_SCHEME + remoteIp + remoteStartDir;
+
+        String userName = sharedPreferences.getString(SettingsActivity.KEY_SMB_USER, "");
+        String passWord = sharedPreferences.getString(SettingsActivity.KEY_SMB_PASS, "");
+
+        //接続用プロパティを作成する
+        Properties prop = new Properties();
+        setProperties(prop);
+
+
+        try {
+            //接続情報を作成する
+            BaseContext baseContext
+                    = new BaseContext(new PropertyConfiguration(prop));
+            NtlmPasswordAuthenticator authenticator
+                    = new NtlmPasswordAuthenticator(userName, passWord);
+            CIFSContext cifsContext = baseContext.withCredentials(authenticator);
+
+            SmbFile smbFile = connect(cifsContext, remoteFile);
+            return smbFile.canWrite();
+        } catch (CIFSException e) {
+            Log.e(TAG, "checkPermissionWrite: ");
+        }
+        return false;
     }
 }
