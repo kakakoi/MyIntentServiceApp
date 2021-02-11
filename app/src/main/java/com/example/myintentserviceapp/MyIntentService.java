@@ -22,11 +22,14 @@ public class MyIntentService extends IntentService {
 
     private static final String TAG = MethodHandles.lookup().lookupClass().getName();
 
+    private static Context mContext;
+
     public MyIntentService() {
         super("MyIntentService");
     }
 
     public static void startActionLocal(Context context) {
+        mContext = context;
         Intent intent = new Intent(context, MyIntentService.class);
         intent.setAction(ACTION_LOCAL);
         context.startService(intent);
@@ -61,15 +64,18 @@ public class MyIntentService extends IntentService {
     }
 
     private void handleActionSMB() {
-        Smb smb = new Smb();
+        Smb smb = new Smb(getApplication());
         try {
-            if (!smb.setup(getApplication(), this)) {
+            if (!smb.setup(this)) {
                 sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_cifs));
             }
         } catch (IOException e) {
             e.printStackTrace();
             Log.e(TAG, e.getLocalizedMessage());
             sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_cifs));
+        } catch (IllegalArgumentException e){
+            Log.d(TAG, "handleActionSMB: config not set");
+            sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_no_config));
         }
     }
 

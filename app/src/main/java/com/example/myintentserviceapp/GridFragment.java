@@ -6,7 +6,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -35,6 +37,7 @@ import com.example.myintentserviceapp.data.PhotoViewModel;
 import com.example.myintentserviceapp.delegate.AnimationDelegate;
 import com.example.myintentserviceapp.network.Smb;
 import com.example.myintentserviceapp.util.RecyclerFastScroller;
+import com.google.android.material.snackbar.Snackbar;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -74,13 +77,29 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
         public void onReceive(Context context, Intent intent) {
             //同期アニメーションを止める
             ActionMenuItemView menuItemView = (ActionMenuItemView) mActivity.findViewById(R.id.action_sync);
-            menuItemView.clearAnimation();
+            if(menuItemView != null) {
+                menuItemView.clearAnimation();
+                //setIcon(id)のため別経路から再取得
+                MenuItem syncMenu = mMenu.findItem(R.id.action_sync);
+                syncMenu.setIcon(R.drawable.ic_baseline_sync_problem_24);
+                //Toast.makeText(getActivity(), intent.getStringExtra(MSG), Toast.LENGTH_SHORT).show();
+                Snackbar snackbar = Snackbar.make(mActivity.findViewById(R.id.main_activity)
+                        , intent.getStringExtra(MSG)
+                        , Snackbar.LENGTH_INDEFINITE);
+                //snackbar.setDuration(10000);
 
-            //setIcon(id)のため別経路から再取得
-            MenuItem syncMenu = mMenu.findItem(R.id.action_sync);
-            syncMenu.setIcon(R.drawable.ic_baseline_sync_problem_24);
-
-            Toast.makeText(getActivity(), intent.getStringExtra(MSG), Toast.LENGTH_SHORT).show();
+                snackbar.setAction(R.string.config_app, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent settingsIntent = new Intent(mActivity, SettingsActivity.class);
+                        startActivity(settingsIntent);
+                    }
+                });
+                snackbar.show();
+            } else {
+                Intent settingsIntent = new Intent(mActivity, SettingsActivity.class);
+                startActivity(settingsIntent);
+            }
         }
     };
 
@@ -131,6 +150,7 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
         super.onActivityCreated(savedInstanceState);
         ViewModelProvider.AndroidViewModelFactory factory = PhotoViewModelFactory.getInstance(requireActivity().getApplication());
         mPhotoViewModel = new ViewModelProvider(this::getViewModelStore, factory).get(PhotoViewModel.class);
+
         LiveData<List<Photo>> lPhotos = mPhotoViewModel.getAllPhotos();
         List<Photo> photos = lPhotos.getValue();
 

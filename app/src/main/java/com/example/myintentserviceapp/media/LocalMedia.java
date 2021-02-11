@@ -57,7 +57,6 @@ public class LocalMedia {
 
                 Photo photo = new Photo();
                 photo.sourceType = Photo.SOURCE_TYPE_LOCAL;
-                photo.sourcePath = filePath;
                 photo.localPath = filePath;
                 photo.dateTimeOriginal = Date.formatMediaDateAdded(dateAdded);
                 photo.createdAt = Date.getTime();

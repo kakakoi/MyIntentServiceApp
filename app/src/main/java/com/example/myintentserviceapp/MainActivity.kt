@@ -4,20 +4,26 @@ import android.Manifest
 import android.annotation.TargetApi
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.preference.PreferenceManager
 import com.example.myintentserviceapp.network.Smb
 import com.example.myintentserviceapp.util.RuntimePermissionUtils
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
 
 class MainActivity : AppCompatActivity() {
     private val EXTERNAL_STORAGE_REQUEST_CODE = 1
@@ -32,12 +38,17 @@ class MainActivity : AppCompatActivity() {
         if (sharedPreferences.getBoolean(SettingsActivity.KEY_SYNC, false)) {
             Log.i(TAG, "onCreate: backup on")
             //smb書込み権限確認
-            GlobalScope.launch {
-                val smb = Smb()
-                if (smb.checkPermissionWrite(application)) {
+            //TODO GlobalScope見直し
+            GlobalScope.launch(Dispatchers.Main) {
+                val writePermission = withContext(Dispatchers.IO){
+                    val smb = Smb(application)
+                    smb.checkPermissionWrite()
+                }
+                if (writePermission) {
                     Log.i(TAG, "onCreate: smb.canWrite true")
                 } else {
                     Log.i(TAG, "onCreate: smb.canWrite false")
+                    Toast.makeText(this@MainActivity, "NASの書込み許可をされないとアプリが実行できません\n権限をチェックしてください", Toast.LENGTH_LONG).show()
                 }
             }
         } else {
@@ -94,7 +105,24 @@ class MainActivity : AppCompatActivity() {
             return
         }
         // 永続的に拒否された場合
-        Toast.makeText(this, "許可されないとアプリが実行できません\nアプリ設定＞権限をチェックしてください", Toast.LENGTH_SHORT).show()
+        //Toast.makeText(this, "許可されないとアプリが実行できません\nアプリ設定＞権限をチェックしてください", Toast.LENGTH_SHORT).show()
+
+        var snackbar = Snackbar.make(window.decorView, R.string.ask_config, Snackbar.LENGTH_SHORT)
+        snackbar.setDuration(10000)
+        snackbar.getView().setBackgroundColor(Color.rgb(32, 125, 98))
+
+        val snackTextView =
+            snackbar.view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)
+
+        // expression lambda
+        snackbar.setAction(
+            "Reply"
+        ) { view -> snackTextView.setText(R.string.ask_config) }
+
+        snackbar.setActionTextColor(Color.YELLOW)
+
+
+        snackbar.show()
     }
 
     companion object {

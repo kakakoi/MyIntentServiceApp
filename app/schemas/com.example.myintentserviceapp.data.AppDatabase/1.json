@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "03779c5b1de55cc8a57b5596fa877740",
+    "identityHash": "96266a12554b41d6097beb27f1af26ab",
     "entities": [
       {
         "tableName": "User",
@@ -38,13 +38,19 @@
       },
       {
         "tableName": "Photo",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`source_path` TEXT NOT NULL, `source_type` TEXT, `file_name` TEXT, `local_path` TEXT, `gps` TEXT, `height` INTEGER NOT NULL, `width` INTEGER NOT NULL, `date_time_original` TEXT, `created_at` TEXT, PRIMARY KEY(`source_path`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `source_path` TEXT, `source_type` TEXT, `file_name` TEXT, `local_path` TEXT, `gps` TEXT, `height` INTEGER NOT NULL, `width` INTEGER NOT NULL, `date_time_original` TEXT, `created_at` TEXT)",
         "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
           {
             "fieldPath": "sourcePath",
             "columnName": "source_path",
             "affinity": "TEXT",
-            "notNull": true
+            "notNull": false
           },
           {
             "fieldPath": "sourceType",
@@ -97,11 +103,28 @@
         ],
         "primaryKey": {
           "columnNames": [
-            "source_path"
+            "id"
           ],
-          "autoGenerate": false
+          "autoGenerate": true
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_Photo_source_path",
+            "unique": true,
+            "columnNames": [
+              "source_path"
+            ],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_Photo_source_path` ON `${TABLE_NAME}` (`source_path`)"
+          },
+          {
+            "name": "index_Photo_local_path",
+            "unique": true,
+            "columnNames": [
+              "local_path"
+            ],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_Photo_local_path` ON `${TABLE_NAME}` (`local_path`)"
+          }
+        ],
         "foreignKeys": []
       },
       {
@@ -178,7 +201,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '03779c5b1de55cc8a57b5596fa877740')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '96266a12554b41d6097beb27f1af26ab')"
     ]
   }
 }

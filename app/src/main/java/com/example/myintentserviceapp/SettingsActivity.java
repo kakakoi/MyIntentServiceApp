@@ -96,14 +96,17 @@ public class SettingsActivity extends AppCompatActivity {
                     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
                         if (key.equals(KEY_SMB_DIR)) {
                             String newValue = sharedPreferences.getString(KEY_SMB_DIR, "");
-                            String exp = "^(\\w)";
-                            String rep = "/$1";
+                            String prefixExp = "^(\\w)";
+                            String prefixRep = "/$1";
+                            String suffixExp = "(\\w)$";
+                            String suffixRep = "$1/";
 
                             if (!TextUtils.isEmpty(newValue)) {
-                                String afterStr = newValue.trim().replaceFirst(exp, rep);
+                                String afterStr = newValue.trim()
+                                        .replaceFirst(prefixExp, prefixRep)
+                                        .replaceFirst(suffixExp, suffixRep);
                                 sharedPreferences.edit().putString(KEY_SMB_DIR, afterStr).apply();
                             }
-
                         }
                     }
                 };

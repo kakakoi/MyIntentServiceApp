@@ -2,19 +2,20 @@ package com.example.myintentserviceapp.data;
 
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-import org.jetbrains.annotations.NotNull;
-
-@Entity
+@Entity(indices = {@Index(value = "source_path",unique = true), @Index(value = "local_path",unique = true)})
 public class Photo {
 
     public static final String SOURCE_TYPE_SMB = "smb";
     public static final String SOURCE_TYPE_LOCAL = "local";
 
-    @PrimaryKey()
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id")
+    public int id;
+
     @ColumnInfo(name = "source_path")
-    @NotNull
     public String sourcePath;
 
     @ColumnInfo(name = "source_type")
