@@ -10,16 +10,22 @@ public class PhotoRepository {
 
     private PhotoDao mPhotoDao;
     private LiveData<List<Photo>> mAllPhotos;
+    private LiveData<Integer> mCount;
 
     public PhotoRepository(Application application) {
         AppDatabase db = AppDatabase.getDatabase(application);
         mPhotoDao = db.photoDao();
         mAllPhotos = mPhotoDao.getAllLocal();
+        mCount = mPhotoDao.count();
     }
 
 
     LiveData<List<Photo>> getAllPhotos() {
         return mAllPhotos;
+    }
+
+    LiveData<Integer> count(){
+        return mCount;
     }
 
     public Photo get(Photo photo) {
@@ -32,11 +38,6 @@ public class PhotoRepository {
 
     public Photo getNoLocalTopOne() {
         return mPhotoDao.getNoLocalTopOne();
-    }
-
-    LiveData<List<Photo>> getReAllPhotos() {
-        mAllPhotos = mPhotoDao.getAll();
-        return mAllPhotos;
     }
 
     // You must call this on a non-UI thread or your app will throw an exception. Room ensures

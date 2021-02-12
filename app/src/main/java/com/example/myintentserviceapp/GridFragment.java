@@ -6,9 +6,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -16,7 +15,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -58,12 +56,18 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
     private Activity mActivity = null;
     private RecyclerView mRecyclerView = null;
     private Menu mMenu;
+
+    private int mDownloadPhotosCount = 0;
+    private int mSearchedPhotosCount = 0;
+    private String mSyncStatus = null;
+
+    private Snackbar mSnackbarSyncPhotoState = null;
     /**
      * BroadcastReceiverでMyIntentServiceからの返答を受け取ろうと思います
      */
     private final BroadcastReceiver msgReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
-            mStatusTextView.setText(intent.getStringExtra(Smb.BROADCAST_TAG_STATUS));
+            mSyncStatus = intent.getStringExtra(Smb.BROADCAST_TAG_STATUS);
             ActionMenuItemView menuItemView = (ActionMenuItemView) mActivity.findViewById(R.id.action_sync);
             //同期アイコンがアニメーションしてなければ動かす
             if (menuItemView != null && menuItemView.getAnimation() == null) {
@@ -77,16 +81,14 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
         public void onReceive(Context context, Intent intent) {
             //同期アニメーションを止める
             ActionMenuItemView menuItemView = (ActionMenuItemView) mActivity.findViewById(R.id.action_sync);
-            if(menuItemView != null) {
+            if (menuItemView != null) {
                 menuItemView.clearAnimation();
                 //setIcon(id)のため別経路から再取得
                 MenuItem syncMenu = mMenu.findItem(R.id.action_sync);
                 syncMenu.setIcon(R.drawable.ic_baseline_sync_problem_24);
-                //Toast.makeText(getActivity(), intent.getStringExtra(MSG), Toast.LENGTH_SHORT).show();
                 Snackbar snackbar = Snackbar.make(mActivity.findViewById(R.id.main_activity)
                         , intent.getStringExtra(MSG)
                         , Snackbar.LENGTH_INDEFINITE);
-                //snackbar.setDuration(10000);
 
                 snackbar.setAction(R.string.config_app, new View.OnClickListener() {
                     @Override
@@ -103,8 +105,6 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
         }
     };
 
-    private TextView mStatusTextView = null;
-    private TextView mFileCountTextView = null;
     private RecyclerFastScroller mRecyclerFastScroller = null;
     private PhotoViewModel mPhotoViewModel;
     private GridLayoutManager mLayoutManager = null;
@@ -161,20 +161,60 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
             adapter = new CustomAdapter(this.createDataset());
         }
         mRecyclerView.setAdapter(adapter);
-        mStatusTextView = (TextView) mActivity.findViewById(R.id.status_text);
-        mFileCountTextView = (TextView) mActivity.findViewById(R.id.file_count_text);
 
         mPhotoViewModel.getAllPhotos().observe(getViewLifecycleOwner(), new Observer<List<Photo>>() {
             @Override
             public void onChanged(List<Photo> photos) {
-                int count = photos.size();
-                if (count > 0) {
+                mDownloadPhotosCount = photos.size();
+                if (mDownloadPhotosCount > 0) {
                     CustomAdapter adapter = (CustomAdapter) mRecyclerView.getAdapter();
                     adapter.setData(photos);
-                    mFileCountTextView.setText(Integer.toString(count) + getString(R.string.text_file));
+
+                    showSyncStateSnackbar();
                 }
             }
         });
+
+        mPhotoViewModel.getCount().observe(getViewLifecycleOwner(), new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer integer) {
+                mSearchedPhotosCount = integer.intValue();
+                if (mSearchedPhotosCount > 0) {
+                    showSyncStateSnackbar();
+                }
+            }
+        });
+    }
+
+    //同期進捗SnackBarを表示
+    private void showSyncStateSnackbar() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(mDownloadPhotosCount);
+        sb.append("/");
+        sb.append(mSearchedPhotosCount);
+        if (!TextUtils.isEmpty(mSyncStatus)) {
+            sb.append(" \n");
+            sb.append(mSyncStatus);
+        }
+        String statusStr = sb.toString();
+        if (mSnackbarSyncPhotoState == null) {
+            mSnackbarSyncPhotoState = Snackbar.make(mActivity.findViewById(R.id.main_activity)
+                    , statusStr
+                    , Snackbar.LENGTH_INDEFINITE);
+        }
+        TextView snackTextView =
+                mSnackbarSyncPhotoState.getView().findViewById(com.google.android.material.R.id.snackbar_text);
+        snackTextView.setText(statusStr);
+        snackTextView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+        //snackTextView.setSingleLine();
+
+        mSnackbarSyncPhotoState.setAction(R.string.close, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mSnackbarSyncPhotoState.dismiss();
+            }
+        });
+        mSnackbarSyncPhotoState.show();
     }
 
     @Override

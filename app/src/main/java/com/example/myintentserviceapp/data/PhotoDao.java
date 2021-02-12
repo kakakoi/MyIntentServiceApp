@@ -18,6 +18,9 @@ public interface PhotoDao {
     @Query("SELECT * FROM photo WHERE local_path is NOT NULL or local_path != '' ORDER BY date_time_original DESC")
     LiveData<List<Photo>> getAllLocal();
 
+    @Query("SELECT count(*) FROM photo")
+    LiveData<Integer> count();
+
     @Query("SELECT * FROM photo WHERE source_path = :sourcePath")
     Photo get(String sourcePath);
 

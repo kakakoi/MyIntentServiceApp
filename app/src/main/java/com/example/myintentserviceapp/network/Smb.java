@@ -63,6 +63,8 @@ public class Smb {
     private PhotoRepository mPhotoRepository;
     private SmbDirectoryRepository mSmbDirectoryRepository;
 
+    private String mReadSpeedKB = null;
+
 
     public Smb(Application application) {
         mApplication = application;
@@ -126,7 +128,7 @@ public class Smb {
                 } catch (CIFSException e) {
                     //接続に問題があるのでDBから削除
                     mSmbDirectoryRepository.delete(directory);
-                    Log.e(TAG, "Access denied " + directory.path);
+                    Log.e(TAG, "Access denied " + directory.path, e);
                     mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_ERROR, GridFragment.MSG, broadcastTagAccessDenied + directory.path);
                 } catch (IOException e) {
                     Log.e(TAG, "IOException" + directory.path + ":" + e.getLocalizedMessage());
@@ -216,7 +218,7 @@ public class Smb {
                 photo.createdAt = Date.getTime();
                 photo.sourceType = Photo.SOURCE_TYPE_SMB;
                 mPhotoRepository.insert(photo);
-                mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, broadcastTagIndex + photo.sourcePath);
+                mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, photo.fileName);
                 countFile++;
                 Log.d(TAG + ":INSERT DB", photo.sourcePath);
                 Log.d(TAG, "INSERT PHOTO DATA (" + photo.sourcePath + ") time is:" + (System.currentTimeMillis() - startTime));
@@ -262,7 +264,27 @@ public class Smb {
         String localFileName = null;
 
         String fileLength = Long.toString(file.length() / 1024);
-        mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, broadcastTagOutput + file.getPath() + "[" + fileLength + "KB]");
+/*
+        long fileByte = file.length();
+        String fileLength = String.format("%,.0f", Math.ceil(fileByte / 1024 / 1024));
+
+*/
+        StringBuilder sb = new StringBuilder();
+        sb.append(file.getName());
+        sb.append(" ");
+        sb.append(fileLength);
+        sb.append("MB");
+        /*
+        if (!TextUtils.isEmpty(mReadSpeedKB)) {
+            sb.append("/");
+            sb.append(mReadSpeedKB);
+            sb.append("bs");
+        }
+        */
+
+        String msg = sb.toString();
+
+        mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, msg);
 
         //ファイルならローカルにCOPYする
         FileOutputStream fileOut = null;
@@ -325,12 +347,21 @@ public class Smb {
             e.printStackTrace();
             Log.e(TAG, e.getMessage());
         } finally {
-            file.close();
-            fileOut.close();
-            is.close();
+            if (file != null) {
+                file.close();
+            }
+            if (fileOut != null) {
+                fileOut.close();
+            }
+            if (is != null) {
+                is.close();
+            }
         }
-        Log.d(TAG, "outputFile(" + file.getPath() + ") time is:" + (System.currentTimeMillis() - startTime));
-        mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, "");
+        long time = System.currentTimeMillis() - startTime;
+        //mReadSpeedKB = String.format("%,.0f", Math.ceil(fileByte / time / 1000));
+
+        Log.d(TAG, "outputFile(" + file.getPath() + ") time is:" + time);
+        //mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, "");
 
         return localFileName;
     }

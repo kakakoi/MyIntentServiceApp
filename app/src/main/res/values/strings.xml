@@ -29,14 +29,15 @@
     <string name="preference_smb_ip_default">0.0.0.0</string>
     <string name="error_cifs">SMB認証エラー</string>
     <string name="text_file">ファイル</string>
-    <string name="index">インデックス...</string>
+    <string name="index">検索中...</string>
     <string name="output">読込中...</string>
     <string name="required.message">権限が必要です</string>
     <string name="android.permission.READ_EXTERNAL_STORAGE">ストレージ</string>
     <string name="access_denied">アクセスできません</string>
     <string name="preference_smb_dir_default">/</string>
-    <string name="error_no_config">設定エラー</string>
+    <string name="error_no_config">設定を確認してください</string>
     <string name="ask_config">設定を確認</string>
     <string name="config_system">システム設定</string>
     <string name="config_app">設定</string>
+    <string name="close">閉じる</string>
 </resources>

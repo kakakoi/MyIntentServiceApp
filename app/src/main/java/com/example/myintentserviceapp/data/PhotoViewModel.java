@@ -11,20 +11,23 @@ import java.util.List;
 public class PhotoViewModel extends AndroidViewModel {
 
     private LiveData<List<Photo>> mAllPhotos;
+    private LiveData<Integer> mCount;
     private PhotoRepository mPhotoRepository;
 
     public PhotoViewModel(@NonNull Application application) {
         super(application);
         mPhotoRepository = new PhotoRepository(application);
         mAllPhotos = mPhotoRepository.getAllPhotos();
+        mCount = mPhotoRepository.count();
+
     }
 
     public LiveData<List<Photo>> getAllPhotos() {
         return mAllPhotos;
     }
 
-    public void reloadAllPhotos(){
-        mAllPhotos = mPhotoRepository.getReAllPhotos();
+    public LiveData<Integer> getCount(){
+        return mCount;
     }
 
     void insert(Photo photo) {
