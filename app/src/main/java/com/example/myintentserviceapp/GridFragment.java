@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.myintentserviceapp.data.Photo;
 import com.example.myintentserviceapp.data.PhotoViewModel;
 import com.example.myintentserviceapp.delegate.AnimationDelegate;
+import com.example.myintentserviceapp.helper.SnackbarHelper;
 import com.example.myintentserviceapp.network.Smb;
 import com.example.myintentserviceapp.util.RecyclerFastScroller;
 import com.google.android.material.snackbar.Snackbar;
@@ -86,18 +87,12 @@ public class GridFragment extends Fragment implements ViewModelStoreOwner {
                 //setIcon(id)のため別経路から再取得
                 MenuItem syncMenu = mMenu.findItem(R.id.action_sync);
                 syncMenu.setIcon(R.drawable.ic_baseline_sync_problem_24);
-                Snackbar snackbar = Snackbar.make(mActivity.findViewById(R.id.main_activity)
+                SnackbarHelper.INSTANCE.withStartActivity(
+                        mActivity.findViewById(R.id.main_activity)
+                        , mActivity
+                        , SettingsActivity.class
                         , intent.getStringExtra(MSG)
-                        , Snackbar.LENGTH_INDEFINITE);
-
-                snackbar.setAction(R.string.config_app, new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent settingsIntent = new Intent(mActivity, SettingsActivity.class);
-                        startActivity(settingsIntent);
-                    }
-                });
-                snackbar.show();
+                );
             } else {
                 Intent settingsIntent = new Intent(mActivity, SettingsActivity.class);
                 startActivity(settingsIntent);

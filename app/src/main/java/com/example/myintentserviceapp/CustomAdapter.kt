@@ -10,17 +10,19 @@ import android.widget.ImageView
 import androidx.core.app.ActivityOptionsCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.myintentserviceapp.data.Photo
 import com.example.myintentserviceapp.util.GlideApp
 import com.example.myintentserviceapp.util.RecyclerFastScroller.FastScrollable
 import java.io.File
+import java.lang.invoke.MethodHandles
 
 class CustomAdapter(private var mList: MutableList<Photo>) :
     RecyclerView.Adapter<CustomAdapter.ViewHolder>(), FastScrollable {
     private var mParent: ViewGroup? = null
     private var mImageWidth = 0
+    private val TAG = MethodHandles.lookup().lookupClass().name
+
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
@@ -33,9 +35,9 @@ class CustomAdapter(private var mList: MutableList<Photo>) :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val pathName = mList[position].localPath
+        val photo = mList[position];
         GlideApp.with(mParent!!.context)
-            .load(File(pathName))
+            .load(File(photo.localPath))
             .placeholder(R.drawable.ic_baseline_photo_24)
             .error(R.drawable.ic_baseline_error_outline_24)
             .override(mImageWidth, mImageWidth)
@@ -54,11 +56,9 @@ class CustomAdapter(private var mList: MutableList<Photo>) :
     // Method that executes your code for the action received
     fun onItemClick(view: View, position: Int) {
         val photo = mList[position]
-        val filepath = photo.localPath
         val context = mParent!!.context
         val intent = Intent(context, PhotoDetailActivity::class.java)
-        intent.putExtra(EXTRA_IMAGE_PATH, filepath)
-        intent.putExtra(EXTRA_IMAGE_TITLE, photo.dateTimeOriginal)
+        intent.putExtra(EXTRA_IMAGE_ID, photo.id)
         val imageView: View = view.findViewById<View>(R.id.card_image_view) as ImageView
         val sharedElementName = imageView.transitionName
         val activity = context as Activity
@@ -119,7 +119,6 @@ class CustomAdapter(private var mList: MutableList<Photo>) :
     }
 
     companion object {
-        const val EXTRA_IMAGE_PATH = "CUSTOM_ADAPTER_IMAGE_PATH"
-        const val EXTRA_IMAGE_TITLE = "CUSTOM_ADAPTER_IMAGE_TITLE"
+        const val EXTRA_IMAGE_ID = "CUSTOM_ADAPTER_IMAGE_ID"
     }
 }

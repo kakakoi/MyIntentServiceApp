@@ -29,4 +29,11 @@ public class Date {
         return df.format(date);
     }
 
+    public static final String getYear(String dateS) {
+        return dateS.substring(0,4);
+    }
+
+    public static final String getMonth(String dateS) {
+        return dateS.substring(5,7);
+    }
 }

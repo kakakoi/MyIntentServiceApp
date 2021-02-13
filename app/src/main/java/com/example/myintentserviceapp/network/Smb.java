@@ -22,11 +22,15 @@ import com.example.myintentserviceapp.data.SmbDirectoryRepository;
 import com.example.myintentserviceapp.util.Bitmaps;
 import com.example.myintentserviceapp.util.Date;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.Properties;
 
 import jcifs.CIFSContext;
@@ -38,6 +42,7 @@ import jcifs.context.BaseContext;
 import jcifs.smb.NtlmPasswordAuthenticator;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
+import jcifs.smb.SmbFileOutputStream;
 
 public class Smb {
     private static final String TAG = MethodHandles.lookup().lookupClass().getName();
@@ -66,10 +71,22 @@ public class Smb {
     private String mReadSpeedKB = null;
 
 
+    //TODO serviceなしコンストラクター対応
+    public Smb(MyIntentService service) {
+        mService = service;
+        mApplication = service.getApplication();
+        mSharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(mApplication);
+        mPhotoRepository = new PhotoRepository(mApplication);
+        mSmbDirectoryRepository = new SmbDirectoryRepository(mApplication);
+    }
+
     public Smb(Application application) {
         mApplication = application;
         mSharedPreferences =
-                PreferenceManager.getDefaultSharedPreferences(application);
+                PreferenceManager.getDefaultSharedPreferences(mApplication);
+        mPhotoRepository = new PhotoRepository(mApplication);
+        mSmbDirectoryRepository = new SmbDirectoryRepository(mApplication);
     }
 
     /**
@@ -95,9 +112,6 @@ public class Smb {
 
     public boolean setup(MyIntentService service) throws IOException {
         boolean result = false;
-        mService = service;
-        mPhotoRepository = new PhotoRepository(mApplication);
-        mSmbDirectoryRepository = new SmbDirectoryRepository(mApplication);
 
         broadcastTagOutput = mApplication.getString(R.string.output);
         broadcastTagIndex = mApplication.getString(R.string.index);
@@ -203,12 +217,13 @@ public class Smb {
                 //create file index
                 //作成日取得
                 InputStream in = file.getInputStream();
-                ExifInterface exifInterface = new ExifInterface(in);
-                String dateStr = exifInterface.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL);
+                String dateStr = getStringOriginDateTime(in);
+                //EXIFになければファイルから作成日時取得
                 if (TextUtils.isEmpty(dateStr)) {
                     java.util.Date createdDate = new java.util.Date(file.createTime());
                     dateStr = Date.format(createdDate);
                 }
+
                 //INSERT PHOTO DB
                 long startTime = System.currentTimeMillis();
                 Photo photo = new Photo();
@@ -225,6 +240,13 @@ public class Smb {
             }
         }
         return countFile;
+    }
+
+    //EXIF datetime origin 文字列取得
+    private String getStringOriginDateTime(InputStream in) throws IOException {
+        ExifInterface exifInterface = new ExifInterface(in);
+        String dateStr = exifInterface.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL);
+        return dateStr;
     }
 
     /**
@@ -367,7 +389,7 @@ public class Smb {
     }
 
     //書込み権限有無
-    public boolean checkPermissionWrite() throws SmbException {
+    public boolean checkPermissionWrite() throws SmbException, IllegalArgumentException {
         SmbFile smbFile = getSmbFileFromConfig();
         boolean result = smbFile.canWrite();
         Log.d(TAG, "checkPermissionWrite return: " + Boolean.toString(result));
@@ -375,7 +397,7 @@ public class Smb {
     }
 
     //接続からSmbFile取得まで
-    public SmbFile getSmbFileFromConfig() {
+    public SmbFile getSmbFileFromConfig() throws IllegalArgumentException {
         String path = getBasePathFromConfig();
         return getSmbFile(path);
     }
@@ -421,26 +443,80 @@ public class Smb {
         return getCIFSContext(userName, passWord);
     }
 
-    public void write(Photo photo) throws SmbException {
-        String appName = mApplication.getString(R.string.app_name).replaceAll("　", " ").replaceAll(" ", "");
+    public void write(Photo photo) throws IOException {
+
+        InputStream in = new FileInputStream(photo.localPath);
+        String dateStr = getStringOriginDateTime(in);
+        //EXIFになければファイルから作成日時取得
+        if (TextUtils.isEmpty(dateStr)) {
+            java.io.File file = new java.io.File(photo.localPath);
+            BasicFileAttributes attrs = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+            FileTime time = attrs.creationTime();
+            java.util.Date createdDate = new java.util.Date(time.toMillis());
+            dateStr = Date.format(createdDate);
+        }
+        String year = Date.getYear(dateStr);
+        String month = Date.getMonth(dateStr);
+
         String basePath = getBasePathFromConfig();
         String exp = "(\\w)$";
         String rep = "$0/";
-        String targetPath = basePath.replaceFirst(exp, rep) + appName;
-        SmbFile smbFile = getSmbFile(targetPath);
+        String targetPath = basePath.replaceFirst(exp, rep);
+        String appName = mApplication.getString(R.string.app_name).replaceAll("　", " ").replaceAll(" ", "");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(targetPath);
+        sb.append(appName);
+        sb.append("/");
+        sb.append(year);
+        sb.append("/");
+        sb.append(month);
+        sb.append("/");
+        String outDir = sb.toString();
+        SmbFile smbFile = getSmbFile(outDir);
+
         if (smbFile.exists()) {
-            Log.d(TAG, "write: exists/" + targetPath);
+            Log.d(TAG, "write: exists/" + outDir);
             //TODO 書込み処理
         } else {
-            smbFile.mkdir();
-            Log.d(TAG, "write: mkdir/" + targetPath);
+            smbFile.mkdirs();
+            Log.d(TAG, "write: mkdir/" + outDir);
         }
+        smbFile.close();
+
+        String sourcePath = outDir + photo.fileName;
+
+        SmbFile outSmbFile = getSmbFile(sourcePath);
+        try (FileInputStream inputStream = new FileInputStream(photo.localPath);
+             SmbFileOutputStream os = new SmbFileOutputStream(outSmbFile);) {
+            byte[] buffer = new byte[1024];
+            long total = 0;
+            int len = 0;
+            while ((len = inputStream.read(buffer)) != -1) {
+                os.write(buffer, 0, len);
+                if (mService != null) {
+                    total += len;
+                    mService.sendMsgBroadcast(MyIntentService.BROADCAST_ACTION_MSG, BROADCAST_TAG_STATUS, photo.fileName + ":UPLOAD " + total);
+                }
+            }
+            os.flush();
+            Log.d(TAG, "write: UPLOAD " + sourcePath);
+        } catch (Exception e) {
+            Log.e(TAG, "write: ", e);
+        } finally {
+            if (outSmbFile != null) {
+                outSmbFile.close();
+            }
+        }
+        photo.sourcePath = sourcePath;
+        mPhotoRepository.update(photo);
+        Log.d(TAG, "write: UPDATE " + photo.sourcePath);
     }
 
     private String basePathFromConfig = null;
 
     //設定から初期パスを取得
-    public String getBasePathFromConfig() {
+    public String getBasePathFromConfig() throws IllegalArgumentException {
         if (!TextUtils.isEmpty(basePathFromConfig)) {
             return basePathFromConfig;
         }

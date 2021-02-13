@@ -28,6 +28,9 @@
     <string name="smb_pass_title">パスワード</string>
     <string name="preference_smb_ip_default">0.0.0.0</string>
     <string name="error_cifs">SMB認証エラー</string>
+    <string name="error_cifs_write">SMB書込権限エラー</string>
+    <string name="error_cifs_read">SMB読込権限エラー</string>
+    <string name="error_cache_storage">読込エラー</string>
     <string name="text_file">ファイル</string>
     <string name="index">検索中...</string>
     <string name="output">読込中...</string>
@@ -40,4 +43,5 @@
     <string name="config_system">システム設定</string>
     <string name="config_app">設定</string>
     <string name="close">閉じる</string>
+    <string name="open">開く</string>
 </resources>

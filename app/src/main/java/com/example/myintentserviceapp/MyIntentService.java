@@ -8,6 +8,8 @@ import android.widget.Toast;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.example.myintentserviceapp.data.Photo;
+import com.example.myintentserviceapp.data.PhotoRepository;
 import com.example.myintentserviceapp.media.LocalMedia;
 import com.example.myintentserviceapp.network.Smb;
 
@@ -16,6 +18,7 @@ import java.lang.invoke.MethodHandles;
 
 public class MyIntentService extends IntentService {
     private static final String ACTION_SMB = "com.example.myintentserviceapp.action.SMB";
+    private static final String ACTION_SMB_WRITE = "com.example.myintentserviceapp.action.SMB";
     private static final String ACTION_LOCAL = "com.example.myintentserviceapp.action.local";
     public static final String BROADCAST_ACTION_ERROR = "com.example.myintentserviceapp.MyIntentService.Broadcast.error";
     public static final String BROADCAST_ACTION_MSG = "com.example.myintentserviceapp.MyIntentService.Broadcast.msg";
@@ -41,6 +44,12 @@ public class MyIntentService extends IntentService {
         context.startService(intent);
     }
 
+    public static void startActionSmbWrite(Context context) {
+        Intent intent = new Intent(context, MyIntentService.class);
+        intent.setAction(ACTION_SMB_WRITE);
+        context.startService(intent);
+    }
+
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
@@ -49,6 +58,8 @@ public class MyIntentService extends IntentService {
                 handleActionSMB();
             } else if (ACTION_LOCAL.equals(action)) {
                 handleActionLocal();
+            } else if (ACTION_SMB_WRITE.equals(action)) {
+                handleActionSmbWrite();
             }
         }
     }
@@ -57,6 +68,8 @@ public class MyIntentService extends IntentService {
         LocalMedia localMedia = new LocalMedia();
         try {
             localMedia.indexing(getApplication());
+            //TODO 呼出を整理する
+            handleActionSmbWrite();
         } catch (Exception e) {
             Log.e(TAG, "handleActionLocal: ", e);
             Toast.makeText(this, "例外が発生、Permissionを許可していますか？", Toast.LENGTH_SHORT).show();
@@ -64,17 +77,36 @@ public class MyIntentService extends IntentService {
     }
 
     private void handleActionSMB() {
-        Smb smb = new Smb(getApplication());
+        Smb smb = new Smb(this);
         try {
             if (!smb.setup(this)) {
-                sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_cifs));
+                sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_cifs_read));
             }
         } catch (IOException e) {
             e.printStackTrace();
             Log.e(TAG, e.getLocalizedMessage());
-            sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_cifs));
-        } catch (IllegalArgumentException e){
+            sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_cache_storage));
+        } catch (IllegalArgumentException e) {
             Log.d(TAG, "handleActionSMB: config not set");
+            sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_no_config));
+        }
+    }
+
+    private void handleActionSmbWrite() {
+        Smb smb = new Smb(this);
+        try {
+            PhotoRepository photoRepository = new PhotoRepository(getApplication());
+            Photo photo;
+            while ((photo = photoRepository.getNoBackupTopOne()) != null) {
+                smb.write(photo);
+                sendMsgBroadcast(BROADCAST_ACTION_MSG, GridFragment.MSG, "アップロード完了:"+photo.fileName);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(TAG, e.getLocalizedMessage());
+            sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_cifs_write));
+        } catch (IllegalArgumentException e) {
+            Log.d(TAG, "handleActionSmbWrite: config not set");
             sendMsgBroadcast(BROADCAST_ACTION_ERROR, GridFragment.MSG, getString(R.string.error_no_config));
         }
     }

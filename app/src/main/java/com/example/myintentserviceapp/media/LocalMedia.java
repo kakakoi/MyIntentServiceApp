@@ -22,6 +22,7 @@ public class LocalMedia {
                 MediaStore.Images.Media._ID,
                 MediaStore.Images.Media.DATA,
                 MediaStore.Images.Media.DATE_ADDED,
+                MediaStore.Images.Media.DISPLAY_NAME,
                 MediaStore.Images.Media.TITLE,
                 MediaStore.Images.Media.WIDTH,
                 MediaStore.Images.Media.HEIGHT,
@@ -53,11 +54,13 @@ public class LocalMedia {
         if (cursor != null && cursor.moveToFirst()) {
             do {
                 String filePath = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+                String fileName = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME));
                 int dateAdded = cursor.getInt(cursor.getColumnIndex(MediaStore.Images.Media.DATE_ADDED));
 
                 Photo photo = new Photo();
                 photo.sourceType = Photo.SOURCE_TYPE_LOCAL;
                 photo.localPath = filePath;
+                photo.fileName = fileName;
                 photo.dateTimeOriginal = Date.formatMediaDateAdded(dateAdded);
                 photo.createdAt = Date.getTime();
                 photoRepository.insert(photo);

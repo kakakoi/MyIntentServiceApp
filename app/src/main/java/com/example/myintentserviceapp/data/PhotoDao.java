@@ -21,6 +21,9 @@ public interface PhotoDao {
     @Query("SELECT count(*) FROM photo")
     LiveData<Integer> count();
 
+    @Query("SELECT * FROM photo WHERE id = :id")
+    Photo getFromId(int id);
+
     @Query("SELECT * FROM photo WHERE source_path = :sourcePath")
     Photo get(String sourcePath);
 

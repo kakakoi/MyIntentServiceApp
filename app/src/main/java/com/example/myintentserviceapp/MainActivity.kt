@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.TargetApi
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -16,13 +15,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.preference.PreferenceManager
+import com.example.myintentserviceapp.helper.SnackbarHelper
 import com.example.myintentserviceapp.network.Smb
 import com.example.myintentserviceapp.util.RuntimePermissionUtils
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -39,8 +36,16 @@ class MainActivity : AppCompatActivity() {
             Log.i(TAG, "onCreate: backup on")
             //smb書込み権限確認
             //TODO GlobalScope見直し
-            GlobalScope.launch(Dispatchers.Main) {
-                val writePermission = withContext(Dispatchers.IO){
+            val errorHandler = CoroutineExceptionHandler { _, exception ->
+                SnackbarHelper.withStartActivity(
+                    this.findViewById(R.id.main_activity),
+                    this,
+                    SettingsActivity::class.java,
+                    R.string.ask_config
+                )
+            }
+            GlobalScope.launch(errorHandler) {
+                val writePermission = withContext(Dispatchers.IO) {
                     val smb = Smb(application)
                     smb.checkPermissionWrite()
                 }
@@ -48,16 +53,24 @@ class MainActivity : AppCompatActivity() {
                     Log.i(TAG, "onCreate: smb.canWrite true")
                 } else {
                     Log.i(TAG, "onCreate: smb.canWrite false")
-                    Toast.makeText(this@MainActivity, "NASの書込み許可をされないとアプリが実行できません\n権限をチェックしてください", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "NASの書込み許可をされないとアプリが実行できません\n権限をチェックしてください",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         } else {
             Log.i(TAG, "onCreate: backup off")
         }
-        if (RuntimePermissionUtils.checkPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
+        if (RuntimePermissionUtils.checkPermission(
+                this,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            )
+        ) {
             MyIntentService.startActionLocal(this)
+            MyIntentService.startActionSMB(this)
         }
-        MyIntentService.startActionSMB(this)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -73,9 +86,13 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             R.id.action_sync -> {
-                MyIntentService.startActionSMB(this)
-                if (RuntimePermissionUtils.checkPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                if (RuntimePermissionUtils.checkPermission(
+                        this,
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    )
+                ) {
                     MyIntentService.startActionLocal(this)
+                    MyIntentService.startActionSMB(this)
                 }
                 true
             }
@@ -85,7 +102,13 @@ class MainActivity : AppCompatActivity() {
 
     // 結果の受け取り
     @TargetApi(Build.VERSION_CODES.M)
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        //TODO 整理
+
         // requestPermissionsの引数に指定した値が、requestCodeで返却される
         if (requestCode != EXTERNAL_STORAGE_REQUEST_CODE) {
             return
@@ -101,15 +124,15 @@ class MainActivity : AppCompatActivity() {
         if (shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
             Toast.makeText(this, "許可されないとアプリが実行できません", Toast.LENGTH_SHORT).show()
             // パーミッションの取得を依頼
-            requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), EXTERNAL_STORAGE_REQUEST_CODE)
+            requestPermissions(
+                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                EXTERNAL_STORAGE_REQUEST_CODE
+            )
             return
         }
         // 永続的に拒否された場合
-        //Toast.makeText(this, "許可されないとアプリが実行できません\nアプリ設定＞権限をチェックしてください", Toast.LENGTH_SHORT).show()
-
-        var snackbar = Snackbar.make(window.decorView, R.string.ask_config, Snackbar.LENGTH_SHORT)
-        snackbar.setDuration(10000)
-        snackbar.getView().setBackgroundColor(Color.rgb(32, 125, 98))
+        var snackbar =
+            Snackbar.make(window.decorView, R.string.ask_config, Snackbar.LENGTH_INDEFINITE)
 
         val snackTextView =
             snackbar.view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)
@@ -118,10 +141,6 @@ class MainActivity : AppCompatActivity() {
         snackbar.setAction(
             "Reply"
         ) { view -> snackTextView.setText(R.string.ask_config) }
-
-        snackbar.setActionTextColor(Color.YELLOW)
-
-
         snackbar.show()
     }
 
