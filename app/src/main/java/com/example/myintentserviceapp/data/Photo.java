@@ -41,4 +41,7 @@ public class Photo {
 
     @ColumnInfo(name = "created_at")
     public String createdAt;
+
+    @ColumnInfo(name = "error_code")
+    public int errorCode;
 }

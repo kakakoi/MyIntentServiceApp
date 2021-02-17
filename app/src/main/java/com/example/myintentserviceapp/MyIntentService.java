@@ -98,7 +98,8 @@ public class MyIntentService extends IntentService {
             PhotoRepository photoRepository = new PhotoRepository(getApplication());
             Photo photo;
             while ((photo = photoRepository.getNoBackupTopOne()) != null) {
-                smb.write(photo);
+                photo = smb.write(photo);
+                photoRepository.update(photo);
                 sendMsgBroadcast(BROADCAST_ACTION_MSG, GridFragment.MSG, "アップロード完了:"+photo.fileName);
             }
         } catch (IOException e) {

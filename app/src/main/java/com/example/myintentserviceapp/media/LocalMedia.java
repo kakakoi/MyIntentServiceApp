@@ -63,8 +63,11 @@ public class LocalMedia {
                 photo.fileName = fileName;
                 photo.dateTimeOriginal = Date.formatMediaDateAdded(dateAdded);
                 photo.createdAt = Date.getTime();
-                photoRepository.insert(photo);
 
+                Photo existPhoto = photoRepository.getLocalMediaPhoto(photo.localPath, photo.dateTimeOriginal, photo.sourceType);
+                if (existPhoto == null) {
+                    photoRepository.insert(photo);
+                }
             } while (cursor.moveToNext());
 
             cursor.close();

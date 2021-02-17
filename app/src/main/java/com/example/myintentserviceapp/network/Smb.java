@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ExifInterface;
 import android.text.TextUtils;
+import android.text.format.Formatter;
 import android.util.Log;
 
 import androidx.preference.PreferenceManager;
@@ -56,6 +57,8 @@ public class Smb {
 
     public static final String BROADCAST_TAG_STATUS = "smb_broad_cast_tag";
 
+    private static final int ERROR_CODE_COPY_LOCAL = 101;
+
     private String broadcastTagOutput;
     private String broadcastTagIndex;
     private String broadcastTagAccessDenied;
@@ -69,6 +72,7 @@ public class Smb {
     private SmbDirectoryRepository mSmbDirectoryRepository;
 
     private String mReadSpeedKB = null;
+
 
 
     //TODO serviceなしコンストラクター対応
@@ -270,8 +274,9 @@ public class Smb {
                 mPhotoRepository.update(photo);
                 Log.d(TAG, "UPDATE PHOTO DATA (" + photo.sourcePath + ") time is:" + (System.currentTimeMillis() - startTime));
             } else {
-                mPhotoRepository.delete(photo);
-                Log.d(TAG, "Can Not Output Photo:" + photo.sourcePath);
+                photo.errorCode = ERROR_CODE_COPY_LOCAL;
+                mPhotoRepository.update(photo);
+                Log.d(TAG, "Can Not Output. DELETE Photo:" + photo.sourcePath);
             }
         } else {
             Log.d(TAG, "Not Photo:" + photo.sourcePath);
@@ -285,24 +290,12 @@ public class Smb {
         long startTime = System.currentTimeMillis();
         String localFileName = null;
 
-        String fileLength = Long.toString(file.length() / 1024);
-/*
         long fileByte = file.length();
-        String fileLength = String.format("%,.0f", Math.ceil(fileByte / 1024 / 1024));
 
-*/
         StringBuilder sb = new StringBuilder();
         sb.append(file.getName());
         sb.append(" ");
-        sb.append(fileLength);
-        sb.append("MB");
-        /*
-        if (!TextUtils.isEmpty(mReadSpeedKB)) {
-            sb.append("/");
-            sb.append(mReadSpeedKB);
-            sb.append("bs");
-        }
-        */
+        sb.append(Formatter.formatShortFileSize(mApplication, fileByte));
 
         String msg = sb.toString();
 
@@ -443,7 +436,7 @@ public class Smb {
         return getCIFSContext(userName, passWord);
     }
 
-    public void write(Photo photo) throws IOException {
+    public Photo write(Photo photo) throws IOException {
 
         InputStream in = new FileInputStream(photo.localPath);
         String dateStr = getStringOriginDateTime(in);
@@ -509,8 +502,9 @@ public class Smb {
             }
         }
         photo.sourcePath = sourcePath;
-        mPhotoRepository.update(photo);
         Log.d(TAG, "write: UPDATE " + photo.sourcePath);
+
+        return photo;
     }
 
     private String basePathFromConfig = null;

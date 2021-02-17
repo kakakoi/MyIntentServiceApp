@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "96266a12554b41d6097beb27f1af26ab",
+    "identityHash": "4263098dc28604315f1e4b230a8511bd",
     "entities": [
       {
         "tableName": "User",
@@ -38,7 +38,7 @@
       },
       {
         "tableName": "Photo",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `source_path` TEXT, `source_type` TEXT, `file_name` TEXT, `local_path` TEXT, `gps` TEXT, `height` INTEGER NOT NULL, `width` INTEGER NOT NULL, `date_time_original` TEXT, `created_at` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `source_path` TEXT, `source_type` TEXT, `file_name` TEXT, `local_path` TEXT, `gps` TEXT, `height` INTEGER NOT NULL, `width` INTEGER NOT NULL, `date_time_original` TEXT, `created_at` TEXT, `error_code` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -99,6 +99,12 @@
             "columnName": "created_at",
             "affinity": "TEXT",
             "notNull": false
+          },
+          {
+            "fieldPath": "errorCode",
+            "columnName": "error_code",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -201,7 +207,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '96266a12554b41d6097beb27f1af26ab')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4263098dc28604315f1e4b230a8511bd')"
     ]
   }
 }

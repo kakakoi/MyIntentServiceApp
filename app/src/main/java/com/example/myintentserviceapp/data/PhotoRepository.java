@@ -48,6 +48,10 @@ public class PhotoRepository {
         return mPhotoDao.getNoBackupTopOne();
     }
 
+    public Photo getLocalMediaPhoto(String path, String date, String type) {
+        return mPhotoDao.getLocalMedia(path, date, type);
+    }
+
     // You must call this on a non-UI thread or your app will throw an exception. Room ensures
     // that you're not doing any long running operations on the main thread, blocking the UI.
     public void insert(Photo photo) {
